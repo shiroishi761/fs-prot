@@ -4,9 +4,11 @@ import { SearchResult } from '../types/case';
 interface CaseCardProps {
   searchResult: SearchResult;
   onClick: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }
 
-const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick }) => {
+const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, onToggleFavorite }) => {
   const { case: caseData, relevanceScore, matchedFields, highlights } = searchResult;
 
   // Get company size label
@@ -52,7 +54,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick }) => {
       onClick={onClick}
       className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 p-6"
     >
-      {/* Header with title and relevance score */}
+      {/* Header with title, favorite button, and relevance score */}
       <div className="flex justify-between items-start mb-3">
         <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-3 leading-tight">
           {matchedFields.includes('title') ? (
@@ -64,11 +66,42 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick }) => {
           )}
         </h3>
         
-        {relevanceScore < 1.0 && (
-          <div className={`px-2 py-1 rounded-full text-xs font-medium ${getScoreColor(relevanceScore)}`}>
-            {Math.round(relevanceScore * 100)}%
-          </div>
-        )}
+        <div className="flex items-center space-x-2">
+          {/* Favorite button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            className={`p-1 rounded-full transition-colors ${
+              isFavorite
+                ? 'text-red-500 hover:text-red-600'
+                : 'text-gray-400 hover:text-red-500'
+            }`}
+            title={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+          >
+            <svg 
+              className="w-5 h-5" 
+              fill={isFavorite ? 'currentColor' : 'none'} 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+              />
+            </svg>
+          </button>
+
+          {/* Relevance score */}
+          {relevanceScore < 1.0 && (
+            <div className={`px-2 py-1 rounded-full text-xs font-medium ${getScoreColor(relevanceScore)}`}>
+              {Math.round(relevanceScore * 100)}%
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Meta information */}

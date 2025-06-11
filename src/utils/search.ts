@@ -193,7 +193,7 @@ function createHighlight(text: string, query: string, maxLength: number = 150): 
 /**
  * フィルターに基づいてケースを絞り込む
  */
-function applyFilters(cases: Case[], filters: SearchFilters): Case[] {
+function applyFilters(cases: Case[], filters: SearchFilters, favoritesSet?: Set<string>): Case[] {
   let filteredCases = [...cases];
   
   // 業界でフィルター
@@ -231,6 +231,11 @@ function applyFilters(cases: Case[], filters: SearchFilters): Case[] {
     );
   }
   
+  // お気に入りでフィルター
+  if (filters.favorites && favoritesSet) {
+    filteredCases = filteredCases.filter(c => favoritesSet.has(c.id));
+  }
+  
   return filteredCases;
 }
 
@@ -239,10 +244,11 @@ function applyFilters(cases: Case[], filters: SearchFilters): Case[] {
  */
 export function searchCases(
   cases: Case[],
-  filters: SearchFilters
+  filters: SearchFilters,
+  favoritesSet?: Set<string>
 ): SearchResult[] {
   // フィルターを適用
-  let filteredCases = applyFilters(cases, filters);
+  let filteredCases = applyFilters(cases, filters, favoritesSet);
   
   // クエリがない場合は、フィルター結果を返す
   if (!filters.query || filters.query.trim() === '') {

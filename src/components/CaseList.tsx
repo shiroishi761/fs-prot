@@ -6,12 +6,16 @@ interface CaseListProps {
   searchResults: SearchResult[];
   loading: boolean;
   onCaseSelect: (caseId: string) => void;
+  favorites: Set<string>;
+  onToggleFavorite: (caseId: string) => void;
 }
 
 const CaseList: React.FC<CaseListProps> = ({ 
   searchResults, 
   loading, 
-  onCaseSelect 
+  onCaseSelect,
+  favorites,
+  onToggleFavorite
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -142,6 +146,8 @@ const CaseList: React.FC<CaseListProps> = ({
             key={result.case.id}
             searchResult={result}
             onClick={() => onCaseSelect(result.case.id)}
+            isFavorite={favorites.has(result.case.id)}
+            onToggleFavorite={() => onToggleFavorite(result.case.id)}
           />
         ))}
       </div>

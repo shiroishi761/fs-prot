@@ -16,12 +16,31 @@ function App() {
   const [hasSearched, setHasSearched] = useState(false);
   const [showCaseCollector, setShowCaseCollector] = useState(false);
   const [mockCases, setMockCases] = useState<Case[]>(initialMockCases);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('careeco-favorites');
+    if (savedFavorites) {
+      try {
+        const favoritesArray = JSON.parse(savedFavorites);
+        setFavorites(new Set(favoritesArray));
+      } catch (error) {
+        console.error('Failed to load favorites from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem('careeco-favorites', JSON.stringify(Array.from(favorites)));
+  }, [favorites]);
 
   // Initialize with all cases
   useEffect(() => {
-    const initialResults = searchCases(mockCases, {});
+    const initialResults = searchCases(mockCases, {}, favorites);
     setSearchResults(initialResults);
-  }, [mockCases]);
+  }, [mockCases, favorites]);
 
   // Handle search
   const handleSearch = async () => {
@@ -31,7 +50,7 @@ function App() {
     // Simulate API delay for better UX
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const results = searchCases(mockCases, filters);
+    const results = searchCases(mockCases, filters, favorites);
     setSearchResults(results);
     setLoading(false);
   };
@@ -62,7 +81,7 @@ function App() {
     if (filtersChanged) {
       // Perform search automatically when non-query filters change
       setTimeout(() => {
-        const results = searchCases(mockCases, newFilters);
+        const results = searchCases(mockCases, newFilters, favorites);
         setSearchResults(results);
         setHasSearched(true);
       }, 100);
@@ -81,8 +100,21 @@ function App() {
     setMockCases(prev => [newCaseWithId, ...prev]);
     
     // Re-run search to include new case
-    const results = searchCases([newCaseWithId, ...mockCases], filters);
+    const results = searchCases([newCaseWithId, ...mockCases], filters, favorites);
     setSearchResults(results);
+  };
+
+  // Handle favorite toggle
+  const handleToggleFavorite = (caseId: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(caseId)) {
+        newFavorites.delete(caseId);
+      } else {
+        newFavorites.add(caseId);
+      }
+      return newFavorites;
+    });
   };
 
   return (
@@ -180,6 +212,8 @@ function App() {
             searchResults={searchResults}
             loading={loading}
             onCaseSelect={handleCaseSelect}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
           />
         </div>
       </main>

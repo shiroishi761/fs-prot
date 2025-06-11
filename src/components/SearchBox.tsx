@@ -193,6 +193,19 @@ const SearchBox: React.FC<SearchBoxProps> = ({
               <option value="large">大規模（300名〜）</option>
             </select>
           </div>
+
+          {/* Favorites Filter */}
+          <div className="flex items-center">
+            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.favorites || false}
+                onChange={(e) => handleFilterChange('favorites', e.target.checked || undefined)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>お気に入りのみ表示</span>
+            </label>
+          </div>
         </div>
 
         {/* Tags Section */}

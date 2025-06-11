@@ -22,6 +22,7 @@ export interface SearchFilters {
   tags?: string[];
   dateFrom?: Date;
   dateTo?: Date;
+  favorites?: boolean; // お気に入りのみ表示
 }
 
 // 検索結果の型定義
