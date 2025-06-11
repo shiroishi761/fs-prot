@@ -34,7 +34,6 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
   const [geminiService] = useState(() => new GeminiService());
   const [isCompleted, setIsCompleted] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [pendingCase, setPendingCase] = useState<Omit<Case, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
