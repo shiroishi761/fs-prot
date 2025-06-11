@@ -20,7 +20,7 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: 'https://branubrain-fs-dev-87a12ee7.web.app/'
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_BRANUBRAIN_FS }}"
           channelId: live
           projectId: branubrain-fs
           target: dev
