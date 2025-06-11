@@ -122,18 +122,24 @@ export class GeminiService {
         { role: 'user', parts: userMessage }
       ];
 
-      // プロンプトの作成
-      const prompt = this.createPrompt(updatedHistory);
+      // Chat APIを使用して会話を管理
+      const chatHistory = this.convertToChatHistory(updatedHistory);
+      const chat = this.model.startChat({
+        history: chatHistory,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        }
+      });
 
-      // Gemini APIを呼び出し（シンプルな形式）
-      console.log('Sending prompt to Gemini:', prompt.substring(0, 100) + '...');
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
+      // 最新のユーザーメッセージのみを送信
+      console.log('Sending message to Gemini:', userMessage.substring(0, 100) + '...');
+      const result = await chat.sendMessage(userMessage);
+      const response = result.response;
       const text = response.text();
       console.log('Received response from Gemini:', text.substring(0, 100) + '...');
 
       // Function Callingのチェック（簡易実装）
-      // 実際の実装では、Gemini APIのFunction Calling機能を使用します
       const structuredCase = this.extractStructuredCase(text, updatedHistory);
 
       return {
@@ -156,21 +162,33 @@ export class GeminiService {
     }
   }
 
-  // プロンプトを作成
-  private createPrompt(conversationHistory: ConversationHistory[]): string {
-    let prompt = SYSTEM_PROMPT + '\n\n';
-    
-    // 会話履歴を追加
-    conversationHistory.forEach(entry => {
-      if (entry.role === 'user') {
-        prompt += `営業担当者: ${entry.parts}\n`;
-      } else {
-        prompt += `アシスタント: ${entry.parts}\n`;
+  // 会話履歴をGemini Chat API形式に変換
+  private convertToChatHistory(conversationHistory: ConversationHistory[]) {
+    // システムプロンプトを最初のメッセージとして追加
+    const chatHistory = [
+      {
+        role: 'user',
+        parts: [{ text: SYSTEM_PROMPT }]
+      },
+      {
+        role: 'model', 
+        parts: [{ text: 'わかりました。営業支援AIアシスタントとして、商談内容を聞き出し事例として整理いたします。' }]
       }
+    ];
+
+    // 会話履歴を変換（最新のユーザーメッセージは除く）
+    const historyToConvert = conversationHistory.slice(0, -1);
+    
+    historyToConvert.forEach(entry => {
+      chatHistory.push({
+        role: entry.role,
+        parts: [{ text: entry.parts }]
+      });
     });
 
-    return prompt;
+    return chatHistory;
   }
+
 
   // レスポンスをクリーンアップ
   private cleanResponse(text: string): string {
@@ -178,36 +196,58 @@ export class GeminiService {
     return text.replace(/\[SAVE_CASE:.*?\]/g, '').trim();
   }
 
+  // 事例登録の準備ができているかチェック
+  checkIfReadyToSave(conversationHistory: ConversationHistory[]): boolean {
+    // 最低限の情報が揃っているかチェック
+    const allText = conversationHistory.map(h => h.parts).join(' ');
+    
+    // 業種、地域、課題、提案が含まれているかチェック
+    const hasIndustry = allText.includes('建築') || allText.includes('土木') || allText.includes('設備');
+    const hasRegion = allText.includes('県') || allText.includes('都') || allText.includes('府');
+    const hasChallenge = allText.includes('課題') || allText.includes('問題') || allText.includes('困');
+    const hasProposal = allText.includes('提案') || allText.includes('CAREECO') || allText.includes('解決');
+    
+    // 最低3つの情報が揃っていて、かつ十分な会話量がある場合のみ
+    return [hasIndustry, hasRegion, hasChallenge, hasProposal].filter(Boolean).length >= 3 
+           && conversationHistory.length >= 4; // 最低2往復の会話
+  }
+
   // 構造化された事例を抽出（簡易実装）
   private extractStructuredCase(
     text: string,
     conversationHistory: ConversationHistory[]
   ): Omit<Case, 'id' | 'createdAt' | 'updatedAt'> | undefined {
-    // 実際の実装では、Gemini APIのFunction Callingレスポンスから抽出します
-    // ここでは会話履歴から情報を推測する簡易実装
-    
-    // レスポンスに保存指示が含まれているかチェック
-    if (!text.includes('事例を保存') && !text.includes('登録完了')) {
+    // 明示的な保存確認が返ってきた場合のみ事例を生成
+    if (!text.includes('[CONFIRM_SAVE]')) {
       return undefined;
     }
 
-    // 会話履歴から情報を抽出（簡易実装）
-    // const allText = conversationHistory.map(h => h.parts).join(' ');
+    // 会話履歴から情報を抽出
+    const allText = conversationHistory.map(h => h.parts).join(' ');
     
-    // デフォルト値
-    const defaultCase: Omit<Case, 'id' | 'createdAt' | 'updatedAt'> = {
-      title: '新規事例',
-      industry: '建設業',
-      region: '東京都',
-      companySize: 'medium',
-      challenge: '',
-      proposal: '',
-      result: '',
+    // より詳細な情報抽出
+    const extractInfo = (keywords: string[], defaultValue: string) => {
+      for (const keyword of keywords) {
+        const regex = new RegExp(`${keyword}[：:]?\\s*([^。\\n]{1,20})`, 'i');
+        const match = allText.match(regex);
+        if (match) return match[1].trim();
+      }
+      return defaultValue;
+    };
+
+    const caseData: Omit<Case, 'id' | 'createdAt' | 'updatedAt'> = {
+      title: extractInfo(['タイトル', '案件'], '営業事例'),
+      industry: extractInfo(['業種', '業界'], allText.includes('建築') ? '建築業' : '建設業'),
+      region: extractInfo(['地域', '都道府県'], '東京都'),
+      companySize: allText.includes('大手') || allText.includes('100人') ? 'large' : 
+                   allText.includes('中小') || allText.includes('30') ? 'small' : 'medium',
+      challenge: extractInfo(['課題', '問題', '困っている'], '業務効率化の課題'),
+      proposal: extractInfo(['提案', '解決策'], 'CAREECONを活用した解決策'),
+      result: extractInfo(['結果', '成果'], '検討中'),
       tags: []
     };
 
-    // 実際の実装では、より高度な情報抽出を行います
-    return defaultCase;
+    return caseData;
   }
 
   // 初回メッセージを生成

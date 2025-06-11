@@ -32,7 +32,11 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
   const [isLoading, setIsLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<ConversationHistory[]>([]);
   const [geminiService] = useState(() => new GeminiService());
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingCase, setPendingCase] = useState<Omit<Case, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,8 +46,17 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
     scrollToBottom();
   }, [messages]);
 
+  // コンポーネントのクリーンアップ
+  useEffect(() => {
+    return () => {
+      // 非同期処理のクリーンアップ（状態更新は行わない）
+      // setIsLoading(false);
+      // setIsCompleted(true);
+    };
+  }, []);
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isCompleted || showConfirmation) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -52,23 +65,42 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
       timestamp: new Date()
     };
 
+    const currentInput = input;
     setMessages(prev => [...prev, userMessage]);
+    
+    // 入力をクリア（確実にクリアするため複数の方法で実行）
     setInput('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+    
     setIsLoading(true);
 
     try {
+      // 会話履歴を先に更新
+      const updatedHistory: ConversationHistory[] = [
+        ...conversationHistory,
+        { role: 'user' as const, parts: currentInput }
+      ].slice(-10); // 最新の10件のみ保持
+
+      // 事例登録の準備ができているかチェック
+      const readyToSave = geminiService.checkIfReadyToSave(updatedHistory);
+      
       // Gemini APIを呼び出し
       const result = await geminiService.continueConversation(
         conversationHistory,
-        input
+        currentInput
       );
 
       // 会話履歴を更新
-      setConversationHistory(prev => [
-        ...prev,
-        { role: 'user', parts: input },
-        { role: 'model', parts: result.response }
-      ]);
+      setConversationHistory(prev => {
+        const newHistory: ConversationHistory[] = [
+          ...prev,
+          { role: 'user' as const, parts: currentInput },
+          { role: 'model' as const, parts: result.response }
+        ];
+        return newHistory.slice(-10);
+      });
 
       // アシスタントのメッセージを追加
       const assistantMessage: Message = {
@@ -79,14 +111,29 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      // 構造化された事例が返ってきた場合
+      // 事例登録準備ができている場合、ユーザーに確認
+      if (readyToSave && !result.structuredCase) {
+        setTimeout(() => {
+          const confirmMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            role: 'assistant',
+            content: '十分な情報が集まりました。この商談内容を事例として登録しますか？',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, confirmMessage]);
+          setShowConfirmation(true);
+        }, 1000);
+      }
+
+      // 構造化された事例が返ってきた場合（確認後）
       if (result.structuredCase) {
+        setIsCompleted(true);
         onCaseCollected(result.structuredCase);
         
         // 成功メッセージを表示してから閉じる
         setTimeout(() => {
           const successMessage: Message = {
-            id: (Date.now() + 2).toString(),
+            id: (Date.now() + 3).toString(),
             role: 'assistant',
             content: '事例を登録しました！ありがとうございました。',
             timestamp: new Date()
@@ -100,6 +147,12 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
       }
 
       setIsLoading(false);
+      
+      // 送信完了後に再度入力をクリア（念のため）
+      setInput('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
     } catch (error) {
       console.error('Error:', error);
       
@@ -112,14 +165,66 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
       };
       setMessages(prev => [...prev, errorMessage]);
       setIsLoading(false);
+      
+      // エラー時も入力をクリア
+      setInput('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  // 事例登録確認の処理
+  const handleConfirmSave = async () => {
+    setShowConfirmation(false);
+    setIsLoading(true);
+
+    try {
+      // 明示的な保存確認をGeminiに送信
+      const result = await geminiService.continueConversation(
+        conversationHistory,
+        '[CONFIRM_SAVE]'
+      );
+
+      if (result.structuredCase) {
+        setIsCompleted(true);
+        onCaseCollected(result.structuredCase);
+        
+        const successMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: '事例を登録しました！ありがとうございました。',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, successMessage]);
+        
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error saving case:', error);
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleDeclineSave = () => {
+    setShowConfirmation(false);
+    const declineMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: 'わかりました。他に聞きたいことがあれば続けてください。',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, declineMessage]);
   };
 
   return (
@@ -171,23 +276,44 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="flex space-x-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="メッセージを入力..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows={2}
-          />
-          <button
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            送信
-          </button>
-        </div>
+        {showConfirmation ? (
+          <div className="flex space-x-2">
+            <button
+              onClick={handleConfirmSave}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+            >
+              はい、登録します
+            </button>
+            <button
+              onClick={handleDeclineSave}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+            >
+              いいえ、続けます
+            </button>
+          </div>
+        ) : (
+          <div className="flex space-x-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="メッセージを入力..."
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={2}
+              disabled={isCompleted}
+            />
+            <button
+              onClick={handleSend}
+              disabled={isLoading || !input.trim() || isCompleted}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              送信
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 text-sm text-gray-500">
           <p>AIアシスタントが質問しながら、事例を整理していきます。</p>
