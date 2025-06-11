@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "branubrain-fs"
+  },
+  "targets": {
+    "branubrain-fs": {
+      "hosting": {
+        "dev": [
+          "branubrain-fs-dev-87a12ee7"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
