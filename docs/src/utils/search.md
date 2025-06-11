@@ -71,6 +71,18 @@ const results = searchCases(mockCases, {
 - 早期リターンによる不要な処理のスキップ
 - スコア0の結果は除外
 
+## 関数拡張パターン
+### `searchCases`関数のシグネチャ変更
+```typescript
+// 変更前: searchCases(cases, filters)
+// 変更後: searchCases(cases, filters, favoritesSet?)
+```
+
+**影響箇所:**
+- `App.tsx` - 3箇所の呼び出し（handleSearch、handleFiltersChange、handleCaseCollected）
+- オプショナル引数のため破壊的変更なし
+
 ## 拡張時の注意点
 - 新フィールド追加時はスコア計算に含める
 - 重み付けの調整時は総合スコアが100を超えないよう注意
+- 関数シグネチャ変更時は影響箇所の事前調査必須

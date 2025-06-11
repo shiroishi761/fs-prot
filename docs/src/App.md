@@ -28,7 +28,14 @@
 - hasSearched: boolean - 検索実行済みフラグ
 - showCaseCollector: boolean - 新規登録モーダル表示フラグ
 - mockCases: Case[] - 事例データ（動的更新可能）
+- favorites: Set<string> - お気に入り事例ID集合
 ```
+
+## 状態管理パターン
+- **単純な値**: useState<string>、useState<boolean>
+- **配列データ**: useState<Array<T>>
+- **選択状態**: useState<Set<string>> - 重複なし、高速検索
+- **永続化**: useEffect + localStorage の組み合わせ
 
 ## 主要メソッド
 
@@ -50,6 +57,11 @@
 - 新規事例の登録処理
 - データ配列への追加（先頭挿入）
 - 検索結果の自動更新
+
+### `handleToggleFavorite(caseId)`
+- お気に入り状態のトグル
+- Set操作（add/delete）
+- localStorage自動同期
 
 ## レイアウト構成
 1. **ヘッダー**

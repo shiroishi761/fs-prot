@@ -10,6 +10,8 @@ AI駆動開発のためのファイル構造と実装詳細を記載。
 - [`App.md`](./src/App.md) - メインアプリケーションコンポーネント
 - [`CaseCollector.md`](./src/components/CaseCollector.md) - AI事例収集モーダル  
 - [`CaseList.md`](./src/components/CaseList.md) - 事例一覧表示
+- [`CaseCard.md`](./src/components/CaseCard.md) - 個別事例カード表示
+- [`CaseDetail.md`](./src/components/CaseDetail.md) - 事例詳細モーダル
 - [`SearchBox.md`](./src/components/SearchBox.md) - 検索インターフェース
 
 ### Services  
@@ -43,6 +45,20 @@ AI駆動開発のためのファイル構造と実装詳細を記載。
 - 全ファイル探索ではなく関連ドキュメントから開始
 - 依存関係の明示による影響範囲の把握
 - 実装パターンの統一による保守性向上
+
+## 機能拡張時の基本フロー
+
+### 新機能追加の一般的な手順
+1. **型定義拡張** (`types/case.ts`) - データ構造の変更
+2. **検索機能拡張** (`utils/search.ts`) - 関数シグネチャ変更
+3. **状態管理追加** (`App.tsx`) - 新しい状態とハンドラー
+4. **UI要素追加** (各コンポーネント) - Props拡張とUI実装
+5. **永続化対応** - localStorage等での状態保存
+
+### Props 拡張の流れ
+```
+App (状態管理) → CaseList (Props転送) → CaseCard (機能実装)
+```
 
 ## システム構成
 

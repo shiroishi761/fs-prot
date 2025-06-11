@@ -126,7 +126,7 @@ function App() {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900">
-                  CAREECO
+                  BRANU
                 </h1>
                 <p className="text-sm text-gray-500">
                   営業支援システム

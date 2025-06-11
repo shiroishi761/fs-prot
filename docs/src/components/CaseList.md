@@ -20,8 +20,16 @@ interface CaseListProps {
   searchResults: SearchResult[];
   loading: boolean;
   onCaseSelect: (caseId: string) => void;
+  favorites: Set<string>;
+  onToggleFavorite: (caseId: string) => void;
 }
 ```
+
+## Props 追加パターン
+新機能追加時のProps拡張は以下の流れ：
+1. **上位コンポーネント（App）** - 状態管理追加
+2. **中間コンポーネント（CaseList）** - Props受け取りと転送
+3. **下位コンポーネント（CaseCard）** - 実際の機能実装
 
 ## 表示状態
 1. **ローディング中**: スケルトンローダーまたはスピナー表示

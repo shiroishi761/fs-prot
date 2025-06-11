@@ -63,6 +63,13 @@ interface SearchResult {
 - `CaseList` - 検索結果表示時
 - `search.ts` - 検索処理時
 
+## 型拡張の影響範囲
+- **SearchFilters拡張時の影響箇所:**
+  - `utils/search.ts` - searchCases関数の対応
+  - `components/SearchBox.tsx` - UI要素追加
+  - `App.tsx` - 状態管理追加（必要に応じて）
+
 ## 拡張時の注意点
 - 企業規模は列挙型のため、追加時は関連コンポーネントも更新
 - 新しいフィールド追加時は検索処理とUI表示の対応も必要
+- オプショナル型（?）での追加推奨（破壊的変更回避）
