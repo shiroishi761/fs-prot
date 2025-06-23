@@ -7,6 +7,7 @@ import CaseList from './components/CaseList';
 import CaseDetail from './components/CaseDetail';
 import { CaseCollector } from './components/CaseCollector';
 import Login from './components/Login';
+import SearchConditionTags from './components/SearchConditionTags';
 import './App.css';
 
 type ViewMode = 'search' | 'list' | 'add';
@@ -93,6 +94,39 @@ function App() {
         setHasSearched(true);
       }, 100);
     }
+  };
+
+  // Handle removing individual filters
+  const handleRemoveFilter = (filterType: keyof SearchFilters, value?: string) => {
+    const newFilters = { ...filters };
+    
+    if (filterType === 'tags' && value) {
+      // Remove specific tag
+      const updatedTags = filters.tags?.filter(tag => tag !== value) || [];
+      newFilters.tags = updatedTags.length > 0 ? updatedTags : undefined;
+    } else if (filterType === 'city') {
+      // Remove city but keep prefecture and region
+      newFilters.city = undefined;
+    } else if (filterType === 'prefecture') {
+      // Remove prefecture and city but keep region
+      newFilters.prefecture = undefined;
+      newFilters.city = undefined;
+    } else if (filterType === 'region') {
+      // Remove all location filters
+      newFilters.region = undefined;
+      newFilters.prefecture = undefined;
+      newFilters.city = undefined;
+    } else {
+      // Remove the entire filter
+      newFilters[filterType] = undefined;
+    }
+    
+    setFilters(newFilters);
+    
+    // Perform search with updated filters
+    const results = searchCases(mockCases, newFilters, favorites);
+    setSearchResults(results);
+    setHasSearched(true);
   };
 
   // Handle new case collection
@@ -230,8 +264,8 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center overflow-auto">
-        <div className="w-full max-w-7xl px-4 py-6">
+      <main className="flex-1 overflow-auto">
+        <div className="w-full max-w-7xl mx-auto px-4 py-6">
         {currentView === 'search' && (
           <>
             {/* Search Section */}
@@ -246,40 +280,10 @@ function App() {
             {/* Results Section */}
             <div className="mb-4">
               {hasSearched && (
-                <div className="mb-2">
-                  {(filters.query || filters.industry || filters.region || filters.prefecture || filters.city || filters.companySize || (filters.tags && filters.tags.length > 0)) && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <span>検索条件:</span>
-                      {filters.query && (
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                          "{filters.query}"
-                        </span>
-                      )}
-                      {filters.industry && (
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                          {filters.industry}
-                        </span>
-                      )}
-                      {(filters.region || filters.prefecture || filters.city) && (
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                          {[filters.region, filters.prefecture, filters.city].filter(Boolean).join(' > ')}
-                        </span>
-                      )}
-                      {filters.companySize && (
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                          {filters.companySize === 'small' && '小規模'}
-                          {filters.companySize === 'medium' && '中規模'}
-                          {filters.companySize === 'large' && '大規模'}
-                        </span>
-                      )}
-                      {filters.tags && filters.tags.length > 0 && (
-                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                          タグ: {filters.tags.length}件
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <SearchConditionTags
+                  filters={filters}
+                  onRemoveFilter={handleRemoveFilter}
+                />
               )}
               
               <CaseList

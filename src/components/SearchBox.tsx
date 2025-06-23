@@ -102,6 +102,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({
         city: undefined
       };
       onFiltersChange(newFilters);
+      setShowLocationDropdown(false);
       setShowPrefecturePopup(false);
       setShowCityPopup(false);
       setHoveredRegion('');
@@ -121,6 +122,8 @@ const SearchBox: React.FC<SearchBoxProps> = ({
         city: value || undefined
       };
       onFiltersChange(newFilters);
+      setShowLocationDropdown(false);
+      setShowPrefecturePopup(false);
       setShowCityPopup(false);
       setHoveredRegion('');
       setHoveredPrefecture('');

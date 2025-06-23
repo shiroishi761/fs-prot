@@ -26,7 +26,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {/* Login button */}
         <button
           onClick={handleGoogleLogin}
-          className="bg-blue-700 hover:bg-blue-500 rounded-xl shadow-lg px-8 py-4 flex items-center gap-4 hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
+          className="bg-blue-600 hover:bg-blue-500 rounded-xl shadow-lg px-8 py-4 flex items-center gap-4 hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
         >
           <svg
             width="24"
