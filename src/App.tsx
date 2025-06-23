@@ -335,7 +335,7 @@ function App() {
                 
                 <button
                   onClick={() => setShowCaseCollector(true)}
-                  className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-medium shadow-lg"
+                  className="bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-medium shadow-lg"
                 >
                   事例を追加する
                 </button>
