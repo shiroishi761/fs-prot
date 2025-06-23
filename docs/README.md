@@ -13,6 +13,8 @@ AI駆動開発のためのファイル構造と実装詳細を記載。
 - [`CaseCard.md`](./src/components/CaseCard.md) - 個別事例カード表示
 - [`CaseDetail.md`](./src/components/CaseDetail.md) - 事例詳細モーダル
 - [`SearchBox.md`](./src/components/SearchBox.md) - 検索インターフェース
+- [`ReflectionAssistant.md`](./src/components/ReflectionAssistant.md) - 商談振り返り支援モーダル
+- [`PreMeetingAdvisor.md`](./src/components/PreMeetingAdvisor.md) - 商談前アドバイス機能
 
 ### Services  
 - [`geminiService.md`](./src/services/geminiService.md) - Gemini API連携サービス
@@ -25,6 +27,7 @@ AI駆動開発のためのファイル構造と実装詳細を記載。
 
 ### Data
 - [`mockCases.md`](./src/data/mockCases.md) - テスト用モックデータ
+- [`salesKnowledge.md`](./src/data/salesKnowledge.md) - 建設業界営業ノウハウデータ
 
 ## AI駆動開発での活用方法
 

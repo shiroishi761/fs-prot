@@ -17,7 +17,19 @@ const CaseList: React.FC<CaseListProps> = ({
   favorites,
   onToggleFavorite
 }) => {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(searchResults.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentResults = searchResults.slice(startIndex, endIndex);
+
+  // Reset to first page when search results change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchResults]);
 
   if (loading) {
     return (
@@ -31,7 +43,7 @@ const CaseList: React.FC<CaseListProps> = ({
           </div>
         </div>
         
-        <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, index) => (
             <div key={index} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
               <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
@@ -84,13 +96,10 @@ const CaseList: React.FC<CaseListProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header with results count and view toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            検索結果 ({searchResults.length}件)
-          </h2>
           
           {/* Search status */}
           {searchResults.some(result => result.relevanceScore < 1.0) && (
@@ -103,45 +112,11 @@ const CaseList: React.FC<CaseListProps> = ({
           )}
         </div>
 
-        {/* View mode toggle */}
-        <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md transition-colors ${
-              viewMode === 'grid'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            title="グリッド表示"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-          </button>
-          
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md transition-colors ${
-              viewMode === 'list'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            title="リスト表示"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
       </div>
 
-      {/* Results grid/list */}
-      <div className={`grid gap-6 ${
-        viewMode === 'grid' 
-          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-          : 'grid-cols-1'
-      }`}>
-        {searchResults.map((result) => (
+      {/* Results grid */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {currentResults.map((result) => (
           <CaseCard
             key={result.case.id}
             searchResult={result}
@@ -152,10 +127,74 @@ const CaseList: React.FC<CaseListProps> = ({
         ))}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 pt-4">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-2 rounded-md text-sm font-medium ${
+              currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+            }`}
+          >
+            前へ
+          </button>
+          
+          {/* Page numbers */}
+          <div className="flex space-x-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Show first page, last page, current page, and pages around current
+              const showPage = 
+                page === 1 || 
+                page === totalPages || 
+                Math.abs(page - currentPage) <= 1;
+              
+              if (!showPage && page === 2 && currentPage > 4) {
+                return <span key={page} className="px-2 text-gray-400">...</span>;
+              }
+              if (!showPage && page === totalPages - 1 && currentPage < totalPages - 3) {
+                return <span key={page} className="px-2 text-gray-400">...</span>;
+              }
+              if (!showPage) {
+                return null;
+              }
+              
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-2 rounded-md text-sm font-medium ${
+              currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+            }`}
+          >
+            次へ
+          </button>
+        </div>
+      )}
+
       {/* Results summary */}
       {searchResults.length > 0 && (
-        <div className="text-center text-sm text-gray-500 pt-8 border-t border-gray-200">
-          {searchResults.length}件の事例を表示中
+        <div className="text-center text-sm text-gray-500 pt-2 border-t border-gray-200">
+          全{searchResults.length}件中 {startIndex + 1}-{Math.min(endIndex, searchResults.length)}件を表示
           {searchResults.some(result => result.relevanceScore < 1.0) && (
             <div className="mt-2">
               関連度の高い順に並んでいます

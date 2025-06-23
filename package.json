@@ -1,6 +1,7 @@
 {
   "name": "sales-support-system",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "description": "建設業界向け営業支援システム - 事例管理、商談前アドバイス、振り返り機能を統合したAI駆動の営業支援ツール",
   "private": true,
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

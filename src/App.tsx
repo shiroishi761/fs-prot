@@ -6,9 +6,15 @@ import SearchBox from './components/SearchBox';
 import CaseList from './components/CaseList';
 import CaseDetail from './components/CaseDetail';
 import { CaseCollector } from './components/CaseCollector';
+import Login from './components/Login';
 import './App.css';
 
+type ViewMode = 'search' | 'list' | 'add';
+
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewMode>('search');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,6 +36,7 @@ function App() {
       }
     }
   }, []);
+
 
   // Save favorites to localStorage
   useEffect(() => {
@@ -117,104 +124,221 @@ function App() {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  BRANU
-                </h1>
-                <p className="text-sm text-gray-500">
-                  営業支援システム
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowCaseCollector(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-              >
-                事例を追加
-              </button>
-              <div className="text-sm text-gray-500">
-                登録事例数: {mockCases.length}件
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Section */}
-        <div className="mb-8">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              事例検索
-            </h2>
-            <p className="text-gray-600 text-sm">
-              キーワードやフィルターを使って、関連する事例を見つけましょう
-            </p>
+  // Handle login
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  // Handle navigation
+  const handleNavigation = (view: ViewMode) => {
+    setCurrentView(view);
+    setSidebarOpen(false);
+    if (view === 'add') {
+      setShowCaseCollector(true);
+    }
+  };
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex">
+      {/* Sidebar */}
+      <div className={`bg-white shadow-lg transition-all duration-300 ease-in-out z-40 ${
+        sidebarOpen ? 'w-64' : 'w-16'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-end p-4 border-b border-gray-200">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {sidebarOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                )}
+              </svg>
+            </button>
           </div>
           
-          <SearchBox
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onSearch={handleSearch}
-          />
+          {/* Sidebar Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            <button
+              onClick={() => handleNavigation('search')}
+              className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                currentView === 'search'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              title={!sidebarOpen ? '事例検索' : ''}
+            >
+              <div className="w-5 h-5 mr-3 flex items-center justify-center">
+                🔍
+              </div>
+              <span className={`transition-opacity duration-300 ${
+                sidebarOpen ? 'opacity-100' : 'opacity-0 sr-only'
+              }`}>
+                事例検索
+              </span>
+            </button>
+            
+            <button
+              onClick={() => handleNavigation('list')}
+              className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                currentView === 'list'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              title={!sidebarOpen ? '事例一覧' : ''}
+            >
+              <div className="w-5 h-5 mr-3 flex items-center justify-center">
+                📄
+              </div>
+              <span className={`transition-opacity duration-300 ${
+                sidebarOpen ? 'opacity-100' : 'opacity-0 sr-only'
+              }`}>
+                事例一覧
+              </span>
+            </button>
+            
+            <button
+              onClick={() => handleNavigation('add')}
+              className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                currentView === 'add'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              title={!sidebarOpen ? '事例追加' : ''}
+            >
+              <div className="w-5 h-5 mr-3 flex items-center justify-center">
+                ➕
+              </div>
+              <span className={`transition-opacity duration-300 ${
+                sidebarOpen ? 'opacity-100' : 'opacity-0 sr-only'
+              }`}>
+                事例追加
+              </span>
+            </button>
+          </nav>
         </div>
+      </div>
 
-        {/* Results Section */}
-        <div className="mb-8">
-          {hasSearched && (
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center overflow-auto">
+        <div className="w-full max-w-7xl px-4 py-6">
+        {currentView === 'search' && (
+          <>
+            {/* Search Section */}
+            <div className="mb-2">
+              <SearchBox
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                onSearch={handleSearch}
+              />
+            </div>
+
+            {/* Results Section */}
             <div className="mb-4">
-              {Object.keys(filters).length > 0 && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <span>検索条件:</span>
-                  {filters.query && (
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                      "{filters.query}"
-                    </span>
-                  )}
-                  {filters.industry && (
-                    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                      {filters.industry}
-                    </span>
-                  )}
-                  {filters.region && (
-                    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                      {filters.region}
-                    </span>
-                  )}
-                  {filters.companySize && (
-                    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                      {filters.companySize === 'small' && '小規模'}
-                      {filters.companySize === 'medium' && '中規模'}
-                      {filters.companySize === 'large' && '大規模'}
-                    </span>
-                  )}
-                  {filters.tags && filters.tags.length > 0 && (
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                      タグ: {filters.tags.length}件
-                    </span>
+              {hasSearched && (
+                <div className="mb-2">
+                  {(filters.query || filters.industry || filters.region || filters.prefecture || filters.city || filters.companySize || (filters.tags && filters.tags.length > 0)) && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <span>検索条件:</span>
+                      {filters.query && (
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          "{filters.query}"
+                        </span>
+                      )}
+                      {filters.industry && (
+                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                          {filters.industry}
+                        </span>
+                      )}
+                      {(filters.region || filters.prefecture || filters.city) && (
+                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                          {[filters.region, filters.prefecture, filters.city].filter(Boolean).join(' > ')}
+                        </span>
+                      )}
+                      {filters.companySize && (
+                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                          {filters.companySize === 'small' && '小規模'}
+                          {filters.companySize === 'medium' && '中規模'}
+                          {filters.companySize === 'large' && '大規模'}
+                        </span>
+                      )}
+                      {filters.tags && filters.tags.length > 0 && (
+                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                          タグ: {filters.tags.length}件
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
+              
+              <CaseList
+                searchResults={searchResults}
+                loading={loading}
+                onCaseSelect={handleCaseSelect}
+                favorites={favorites}
+                onToggleFavorite={handleToggleFavorite}
+              />
             </div>
-          )}
-          
-          <CaseList
-            searchResults={searchResults}
-            loading={loading}
-            onCaseSelect={handleCaseSelect}
-            favorites={favorites}
-            onToggleFavorite={handleToggleFavorite}
-          />
+          </>
+        )}
+
+        {currentView === 'list' && (
+          <>
+            {/* List Section */}
+            <div className="mb-4">
+              <div className="mb-6 text-center">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  事例一覧
+                </h2>
+                <p className="text-gray-600">
+                  登録されている全ての事例を表示します
+                </p>
+              </div>
+              
+              <CaseList
+                searchResults={searchCases(mockCases, {}, favorites)}
+                loading={false}
+                onCaseSelect={handleCaseSelect}
+                favorites={favorites}
+                onToggleFavorite={handleToggleFavorite}
+              />
+            </div>
+          </>
+        )}
+
+        {currentView === 'add' && (
+          <>
+            {/* Add Section */}
+            <div className="mb-4 text-center">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  事例追加
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  下のボタンをクリックして新しい事例を追加できます
+                </p>
+                
+                <button
+                  onClick={() => setShowCaseCollector(true)}
+                  className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-medium shadow-lg"
+                >
+                  事例を追加する
+                </button>
+              </div>
+            </div>
+          </>
+        )}
         </div>
       </main>
 
@@ -235,17 +359,7 @@ function App() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500 text-sm">
-            <p>&copy; 2024 CAREECO. All rights reserved.</p>
-            <p className="mt-1">
-              建設業界向け営業支援システム
-            </p>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 }

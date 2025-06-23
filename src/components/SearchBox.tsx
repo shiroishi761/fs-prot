@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SearchFilters, INDUSTRIES, REGIONS, COMMON_TAGS } from '../types/case';
+import { SearchFilters, INDUSTRIES, REGIONS, COMMON_TAGS, AREA_HIERARCHY } from '../types/case';
 import { generateSearchSuggestions } from '../utils/search';
 import { mockCases } from '../data/mockCases';
 
@@ -18,6 +18,17 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>(filters.tags || []);
+  const [selectedRegion, setSelectedRegion] = useState(filters.region || '');
+  const [selectedPrefecture, setSelectedPrefecture] = useState(filters.prefecture || '');
+  const [selectedCity, setSelectedCity] = useState(filters.city || '');
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showPrefecturePopup, setShowPrefecturePopup] = useState(false);
+  const [showCityPopup, setShowCityPopup] = useState(false);
+  const [hoveredRegion, setHoveredRegion] = useState<string>('');
+  const [hoveredPrefecture, setHoveredPrefecture] = useState<string>('');
+  const [popupTimeouts, setPopupTimeouts] = useState<{[key: string]: NodeJS.Timeout}>({});
+  const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  const [showCompanySizeDropdown, setShowCompanySizeDropdown] = useState(false);
 
   // Generate search suggestions
   const updateSuggestions = useCallback((searchQuery: string) => {
@@ -44,6 +55,111 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     onFiltersChange(newFilters);
   };
 
+  // Helper function to find region and prefecture for a city
+  const findLocationHierarchy = (cityName: string) => {
+    for (const [region, prefectures] of Object.entries(AREA_HIERARCHY)) {
+      for (const [prefecture, cities] of Object.entries(prefectures)) {
+        if (cities.includes(cityName)) {
+          return { region, prefecture };
+        }
+      }
+    }
+    return null;
+  };
+
+  // Handle location selection
+  const handleLocationSelect = (type: 'region' | 'prefecture' | 'city', value: string) => {
+    if (type === 'region') {
+      setSelectedRegion(value);
+      setSelectedPrefecture('');
+      setSelectedCity('');
+      const newFilters = { 
+        ...filters, 
+        region: value || undefined,
+        prefecture: undefined,
+        city: undefined
+      };
+      onFiltersChange(newFilters);
+      setShowLocationDropdown(false);
+      setShowPrefecturePopup(false);
+      setShowCityPopup(false);
+      setHoveredRegion('');
+      setHoveredPrefecture('');
+    } else if (type === 'prefecture') {
+      // Find the corresponding region for this prefecture
+      const hierarchy = Object.entries(AREA_HIERARCHY).find(([region, prefectures]) => 
+        Object.keys(prefectures).includes(value)
+      );
+      if (hierarchy) {
+        setSelectedRegion(hierarchy[0]);
+      }
+      setSelectedPrefecture(value);
+      setSelectedCity('');
+      const newFilters = { 
+        ...filters,
+        region: hierarchy?.[0] || filters.region,
+        prefecture: value || undefined,
+        city: undefined
+      };
+      onFiltersChange(newFilters);
+      setShowPrefecturePopup(false);
+      setShowCityPopup(false);
+      setHoveredRegion('');
+      setHoveredPrefecture('');
+    } else if (type === 'city') {
+      // Find the corresponding region and prefecture for this city
+      const hierarchy = findLocationHierarchy(value);
+      if (hierarchy) {
+        setSelectedRegion(hierarchy.region);
+        setSelectedPrefecture(hierarchy.prefecture);
+      }
+      setSelectedCity(value);
+      const newFilters = { 
+        ...filters,
+        region: hierarchy?.region || filters.region,
+        prefecture: hierarchy?.prefecture || filters.prefecture,
+        city: value || undefined
+      };
+      onFiltersChange(newFilters);
+      setShowCityPopup(false);
+      setHoveredRegion('');
+      setHoveredPrefecture('');
+    }
+  };
+
+  // Get display text for location selector
+  const getLocationDisplayText = () => {
+    if (selectedCity) {
+      return `${selectedRegion} > ${selectedPrefecture} > ${selectedCity}`;
+    } else if (selectedPrefecture) {
+      return `${selectedRegion} > ${selectedPrefecture}`;
+    } else if (selectedRegion) {
+      return selectedRegion;
+    }
+    return 'すべての地域';
+  };
+
+  // Helper functions for popup management
+  const clearPopupTimeout = (key: string) => {
+    if (popupTimeouts[key]) {
+      clearTimeout(popupTimeouts[key]);
+      setPopupTimeouts(prev => {
+        const newTimeouts = { ...prev };
+        delete newTimeouts[key];
+        return newTimeouts;
+      });
+    }
+  };
+
+  const setPopupTimeout = (key: string, callback: () => void, delay: number = 1000) => {
+    clearPopupTimeout(key);
+    const timeout = setTimeout(callback, delay);
+    setPopupTimeouts(prev => ({
+      ...prev,
+      [key]: timeout
+    }));
+  };
+
   // Handle tag selection
   const handleTagToggle = (tag: string) => {
     const newTags = selectedTags.includes(tag)
@@ -66,8 +182,16 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   const handleClearFilters = () => {
     setQuery('');
     setSelectedTags([]);
+    setSelectedRegion('');
+    setSelectedPrefecture('');
+    setSelectedCity('');
     setSuggestions([]);
     setShowSuggestions(false);
+    setShowLocationDropdown(false);
+    setShowPrefecturePopup(false);
+    setShowCityPopup(false);
+    setShowIndustryDropdown(false);
+    setShowCompanySizeDropdown(false);
     onFiltersChange({});
   };
 
@@ -86,16 +210,77 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   useEffect(() => {
     setQuery(filters.query || '');
     setSelectedTags(filters.tags || []);
+    setSelectedRegion(filters.region || '');
+    setSelectedPrefecture(filters.prefecture || '');
+    setSelectedCity(filters.city || '');
   }, [filters]);
 
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(popupTimeouts).forEach(timeout => {
+        clearTimeout(timeout);
+      });
+    };
+  }, [popupTimeouts]);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Check if click is outside location dropdown
+      if (!target.closest('.location-filter')) {
+        setShowLocationDropdown(false);
+        setShowPrefecturePopup(false);
+        setShowCityPopup(false);
+        setHoveredRegion('');
+        setHoveredPrefecture('');
+      }
+      
+      // Check if click is outside industry dropdown
+      if (!target.closest('.industry-filter')) {
+        setShowIndustryDropdown(false);
+      }
+      
+      // Check if click is outside company size dropdown
+      if (!target.closest('.company-size-filter')) {
+        setShowCompanySizeDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Get available prefectures based on hovered or selected region
+  const getAvailablePrefectures = () => {
+    const region = hoveredRegion || selectedRegion;
+    if (!region || !AREA_HIERARCHY[region as keyof typeof AREA_HIERARCHY]) {
+      return [];
+    }
+    return Object.keys(AREA_HIERARCHY[region as keyof typeof AREA_HIERARCHY]);
+  };
+
+  // Get available cities based on hovered or selected prefecture
+  const getAvailableCities = () => {
+    const region = hoveredRegion || selectedRegion;
+    const prefecture = hoveredPrefecture || selectedPrefecture;
+    if (!region || !prefecture) {
+      return [];
+    }
+    const regionData = AREA_HIERARCHY[region as keyof typeof AREA_HIERARCHY];
+    return regionData[prefecture as keyof typeof regionData] || [];
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div className="bg-white rounded-lg shadow-lg p-3 mb-2">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Search Input */}
         <div className="relative">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-            キーワード検索
-          </label>
           <div className="relative">
             <input
               id="search"
@@ -135,76 +320,271 @@ const SearchBox: React.FC<SearchBoxProps> = ({
         </div>
 
         {/* Filter Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Industry Filter */}
-          <div>
-            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-1">
-              業界
-            </label>
-            <select
-              id="industry"
-              value={filters.industry || ''}
-              onChange={(e) => handleFilterChange('industry', e.target.value || undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">すべての業界</option>
-              {INDUSTRIES.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industry}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Region Filter */}
-          <div>
-            <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+          {/* Location Filter */}
+          <div className="relative location-filter">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               地域
             </label>
-            <select
-              id="region"
-              value={filters.region || ''}
-              onChange={(e) => handleFilterChange('region', e.target.value || undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <button
+              type="button"
+              onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white flex justify-between items-center"
             >
-              <option value="">すべての地域</option>
-              {REGIONS.map((region) => (
-                <option key={region} value={region}>
-                  {region}
-                </option>
-              ))}
-            </select>
+            <span className={selectedRegion ? 'text-gray-900' : 'text-gray-500'}>
+              {getLocationDisplayText()}
+            </span>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Location Dropdown */}
+          {showLocationDropdown && (
+            <div className="absolute top-full left-0 mt-1 w-60 bg-white border border-gray-300 rounded-md shadow-lg z-50">
+              <div className="overflow-visible">
+                <button
+                  type="button"
+                  onClick={() => handleLocationSelect('region', '')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-500"
+                >
+                  すべての地域
+                </button>
+                {REGIONS.map((region) => (
+                  <div 
+                    key={region} 
+                    className="relative"
+                    onMouseEnter={() => {
+                      clearPopupTimeout('prefecture');
+                      setHoveredRegion(region);
+                      setShowPrefecturePopup(true);
+                    }}
+                    onMouseLeave={() => {
+                      // タイムアウトによる自動クローズを無効化
+                      // 他のエリアをクリックした時のみ閉じる
+                    }}
+                  >
+                    <div className="relative">
+                      <button
+                        type="button"
+                        data-region={region}
+                        onClick={() => handleLocationSelect('region', region)}
+                        className={`w-full px-4 py-2 text-left hover:bg-blue-50 flex justify-between items-center ${
+                          selectedRegion === region ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                        }`}
+                      >
+                        <span>{region}</span>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Prefecture Popup */}
+                    {showPrefecturePopup && hoveredRegion === region && (
+                      <div 
+                        className="prefecture-popup absolute left-full top-0 ml-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-[9999] overflow-visible"
+                        onMouseEnter={() => {
+                          clearPopupTimeout('prefecture');
+                          clearPopupTimeout('city');
+                          setShowPrefecturePopup(true);
+                          setHoveredRegion(region);
+                        }}
+                        onMouseLeave={() => {
+                          // タイムアウトによる自動クローズを無効化
+                        }}
+                      >
+                        <div className="overflow-visible">
+                          {getAvailablePrefectures().map((prefecture) => (
+                            <div key={prefecture} className="relative overflow-visible">
+                              <div
+                                onMouseEnter={() => {
+                                  clearPopupTimeout('city');
+                                  setHoveredPrefecture(prefecture);
+                                  setShowCityPopup(true);
+                                }}
+                                onMouseLeave={() => {
+                                  // タイムアウトによる自動クローズを無効化
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => handleLocationSelect('prefecture', prefecture)}
+                                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 flex justify-between items-center ${
+                                    selectedPrefecture === prefecture ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                                  }`}
+                                >
+                                  <span>{prefecture}</span>
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                              </div>
+
+                              {/* City Popup */}
+                              {showCityPopup && hoveredPrefecture === prefecture && (
+                                <div 
+                                  className="city-popup absolute left-full top-0 ml-1 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-[9999] overflow-visible"
+                                  onMouseEnter={() => {
+                                    clearPopupTimeout('city');
+                                    clearPopupTimeout('prefecture');
+                                    setShowCityPopup(true);
+                                    setHoveredPrefecture(prefecture);
+                                  }}
+                                  onMouseLeave={() => {
+                                    // タイムアウトによる自動クローズを無効化
+                                  }}
+                                >
+                                  <div className="overflow-visible">
+                                    {getAvailableCities().map((city) => (
+                                      <button
+                                        key={city}
+                                        type="button"
+                                        onClick={() => handleLocationSelect('city', city)}
+                                        className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
+                                          selectedCity === city ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                                        }`}
+                                      >
+                                        {city}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          </div>
+
+          {/* Industry Filter */}
+          <div className="relative industry-filter">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              業界
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white flex justify-between items-center"
+            >
+              <span className={filters.industry ? 'text-gray-900' : 'text-gray-500'}>
+                {filters.industry || 'すべての業界'}
+              </span>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Industry Dropdown */}
+            {showIndustryDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange('industry', undefined);
+                    setShowIndustryDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-500"
+                >
+                  すべての業界
+                </button>
+                {INDUSTRIES.map((industry) => (
+                  <button
+                    key={industry}
+                    type="button"
+                    onClick={() => {
+                      handleFilterChange('industry', industry);
+                      setShowIndustryDropdown(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
+                      filters.industry === industry ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                    }`}
+                  >
+                    {industry}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Company Size Filter */}
-          <div>
-            <label htmlFor="companySize" className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="relative company-size-filter">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               企業規模
             </label>
-            <select
-              id="companySize"
-              value={filters.companySize || ''}
-              onChange={(e) => handleFilterChange('companySize', e.target.value || undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <button
+              type="button"
+              onClick={() => setShowCompanySizeDropdown(!showCompanySizeDropdown)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white flex justify-between items-center"
             >
-              <option value="">すべての規模</option>
-              <option value="small">小規模（〜50名）</option>
-              <option value="medium">中規模（50-300名）</option>
-              <option value="large">大規模（300名〜）</option>
-            </select>
-          </div>
+              <span className={filters.companySize ? 'text-gray-900' : 'text-gray-500'}>
+                {filters.companySize === 'small' && '小規模（〜50名）'}
+                {filters.companySize === 'medium' && '中規模（50-300名）'}
+                {filters.companySize === 'large' && '大規模（300名〜）'}
+                {!filters.companySize && 'すべての規模'}
+              </span>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-          {/* Favorites Filter */}
-          <div className="flex items-center">
-            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.favorites || false}
-                onChange={(e) => handleFilterChange('favorites', e.target.checked || undefined)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>お気に入りのみ表示</span>
-            </label>
+            {/* Company Size Dropdown */}
+            {showCompanySizeDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange('companySize', undefined);
+                    setShowCompanySizeDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-500"
+                >
+                  すべての規模
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange('companySize', 'small');
+                    setShowCompanySizeDropdown(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
+                    filters.companySize === 'small' ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                  }`}
+                >
+                  小規模（〜50名）
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange('companySize', 'medium');
+                    setShowCompanySizeDropdown(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
+                    filters.companySize === 'medium' ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                  }`}
+                >
+                  中規模（50-300名）
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange('companySize', 'large');
+                    setShowCompanySizeDropdown(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
+                    filters.companySize === 'large' ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
+                  }`}
+                >
+                  大規模（300名〜）
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -219,7 +599,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({
                 key={tag}
                 type="button"
                 onClick={() => handleTagToggle(tag)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                   selectedTags.includes(tag)
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -231,8 +611,17 @@ const SearchBox: React.FC<SearchBoxProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-between items-center pt-2">
+        {/* Favorites and Clear Filter Row */}
+        <div className="flex justify-between items-center">
+          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filters.favorites || false}
+              onChange={(e) => handleFilterChange('favorites', e.target.checked || undefined)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>お気に入りのみ表示</span>
+          </label>
           <button
             type="button"
             onClick={handleClearFilters}
@@ -240,9 +629,13 @@ const SearchBox: React.FC<SearchBoxProps> = ({
           >
             フィルターをクリア
           </button>
+        </div>
+
+        {/* Search Button */}
+        <div>
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md font-medium transition-colors"
           >
             検索
           </button>

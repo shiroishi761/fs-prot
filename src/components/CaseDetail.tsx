@@ -95,7 +95,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
               </svg>
               <div>
                 <div className="text-sm text-gray-500">地域</div>
-                <div className="font-medium">{caseData.region}</div>
+                <div className="font-medium">{[caseData.region, caseData.prefecture, caseData.city].filter(Boolean).join(' > ')}</div>
               </div>
             </div>
             

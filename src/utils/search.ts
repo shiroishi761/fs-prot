@@ -145,6 +145,31 @@ function calculateRelevanceScore(caseItem: Case, query: string): {
     totalScore += industryScore;
   }
   
+  // 地域のマッチング
+  const regionScore = calculateSubstringScore(caseItem.region, query) * 0.5;
+  if (regionScore > 0.5) {
+    matchedFields.push('region');
+    totalScore += regionScore;
+  }
+  
+  // 都道府県のマッチング
+  if (caseItem.prefecture) {
+    const prefectureScore = calculateSubstringScore(caseItem.prefecture, query) * 0.7;
+    if (prefectureScore > 0.5) {
+      matchedFields.push('prefecture');
+      totalScore += prefectureScore;
+    }
+  }
+  
+  // 市区町村のマッチング
+  if (caseItem.city) {
+    const cityScore = calculateSubstringScore(caseItem.city, query) * 0.8;
+    if (cityScore > 0.5) {
+      matchedFields.push('city');
+      totalScore += cityScore;
+    }
+  }
+  
   return {
     score: Math.min(totalScore / 10, 1.0), // 0-1の範囲に正規化
     matchedFields
@@ -204,6 +229,16 @@ function applyFilters(cases: Case[], filters: SearchFilters, favoritesSet?: Set<
   // 地域でフィルター
   if (filters.region) {
     filteredCases = filteredCases.filter(c => c.region === filters.region);
+  }
+  
+  // 都道府県でフィルター
+  if (filters.prefecture) {
+    filteredCases = filteredCases.filter(c => c.prefecture === filters.prefecture);
+  }
+  
+  // 市区町村でフィルター
+  if (filters.city) {
+    filteredCases = filteredCases.filter(c => c.city === filters.city);
   }
   
   // 企業規模でフィルター
@@ -381,6 +416,27 @@ export function generateSearchSuggestions(
   for (const caseItem of cases) {
     if (caseItem.industry.toLowerCase().startsWith(lowerQuery)) {
       suggestions.add(caseItem.industry);
+    }
+  }
+  
+  // 地域名から候補を抽出
+  for (const caseItem of cases) {
+    if (caseItem.region.toLowerCase().startsWith(lowerQuery)) {
+      suggestions.add(caseItem.region);
+    }
+  }
+  
+  // 都道府県から候補を抽出
+  for (const caseItem of cases) {
+    if (caseItem.prefecture && caseItem.prefecture.toLowerCase().startsWith(lowerQuery)) {
+      suggestions.add(caseItem.prefecture);
+    }
+  }
+  
+  // 市区町村から候補を抽出
+  for (const caseItem of cases) {
+    if (caseItem.city && caseItem.city.toLowerCase().startsWith(lowerQuery)) {
+      suggestions.add(caseItem.city);
     }
   }
   
