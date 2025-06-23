@@ -151,14 +151,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     }
   };
 
-  const setPopupTimeout = (key: string, callback: () => void, delay: number = 1000) => {
-    clearPopupTimeout(key);
-    const timeout = setTimeout(callback, delay);
-    setPopupTimeouts(prev => ({
-      ...prev,
-      [key]: timeout
-    }));
-  };
 
   // Handle tag selection
   const handleTagToggle = (tag: string) => {
