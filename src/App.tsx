@@ -265,7 +265,7 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="w-full max-w-7xl mx-auto px-4 py-6">
+        <div className="w-full max-w-7xl mx-auto px-4 py-6 my-10">
         {currentView === 'search' && (
           <>
             {/* Search Section */}
