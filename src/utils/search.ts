@@ -107,21 +107,48 @@ function calculateRelevanceScore(caseItem: Case, query: string): {
   }
   
   // 課題のマッチング（重要）
-  const challengeScore = calculateSubstringScore(caseItem.challenge, query) * 2.0;
+  let challengeScore = 0;
+  if (caseItem.challenges?.length) {
+    // 新しいデータ構造：複数の課題から最高スコアを使用
+    challengeScore = Math.max(...caseItem.challenges.map(challenge => 
+      calculateSubstringScore(challenge, query)
+    )) * 2.0;
+  } else if (caseItem.challenge) {
+    // 後方互換性：古いデータ構造
+    challengeScore = calculateSubstringScore(caseItem.challenge, query) * 2.0;
+  }
   if (challengeScore > 0.1) {
     matchedFields.push('challenge');
     totalScore += challengeScore;
   }
   
   // 提案のマッチング
-  const proposalScore = calculateSubstringScore(caseItem.proposal, query) * 1.5;
+  let proposalScore = 0;
+  if (caseItem.proposals?.length) {
+    // 新しいデータ構造：複数の提案から最高スコアを使用
+    proposalScore = Math.max(...caseItem.proposals.map(proposal => 
+      calculateSubstringScore(proposal, query)
+    )) * 1.5;
+  } else if (caseItem.proposal) {
+    // 後方互換性：古いデータ構造
+    proposalScore = calculateSubstringScore(caseItem.proposal, query) * 1.5;
+  }
   if (proposalScore > 0.1) {
     matchedFields.push('proposal');
     totalScore += proposalScore;
   }
   
   // 結果のマッチング
-  const resultScore = calculateSubstringScore(caseItem.result, query) * 1.5;
+  let resultScore = 0;
+  if (caseItem.results?.length) {
+    // 新しいデータ構造：複数の結果から最高スコアを使用
+    resultScore = Math.max(...caseItem.results.map(result => 
+      calculateSubstringScore(result, query)
+    )) * 1.5;
+  } else if (caseItem.result) {
+    // 後方互換性：古いデータ構造
+    resultScore = calculateSubstringScore(caseItem.result, query) * 1.5;
+  }
   if (resultScore > 0.1) {
     matchedFields.push('result');
     totalScore += resultScore;
@@ -221,13 +248,19 @@ function createHighlight(text: string, query: string, maxLength: number = 150): 
 function applyFilters(cases: Case[], filters: SearchFilters, favoritesSet?: Set<string>): Case[] {
   let filteredCases = [...cases];
   
-  // 業界でフィルター
-  if (filters.industry) {
+  // 業界でフィルター（複数選択対応）
+  if (filters.industries && filters.industries.length > 0) {
+    filteredCases = filteredCases.filter(c => filters.industries!.includes(c.industry));
+  } else if (filters.industry) {
+    // 後方互換性のため古いフィルターも対応
     filteredCases = filteredCases.filter(c => c.industry === filters.industry);
   }
   
-  // 地域でフィルター
-  if (filters.region) {
+  // 地域でフィルター（複数選択対応）
+  if (filters.regions && filters.regions.length > 0) {
+    filteredCases = filteredCases.filter(c => filters.regions!.includes(c.region));
+  } else if (filters.region) {
+    // 後方互換性のため古いフィルターも対応
     filteredCases = filteredCases.filter(c => c.region === filters.region);
   }
   
@@ -316,13 +349,22 @@ export function searchCases(
         result.highlights!.title = createHighlight(caseItem.title, query, 100);
       }
       if (matchedFields.includes('challenge')) {
-        result.highlights!.challenge = createHighlight(caseItem.challenge, query);
+        const challengeText = caseItem.challenges?.length ? caseItem.challenges[0] : caseItem.challenge;
+        if (challengeText) {
+          result.highlights!.challenge = createHighlight(challengeText, query);
+        }
       }
       if (matchedFields.includes('proposal')) {
-        result.highlights!.proposal = createHighlight(caseItem.proposal, query);
+        const proposalText = caseItem.proposals?.length ? caseItem.proposals[0] : caseItem.proposal;
+        if (proposalText) {
+          result.highlights!.proposal = createHighlight(proposalText, query);
+        }
       }
       if (matchedFields.includes('result')) {
-        result.highlights!.result = createHighlight(caseItem.result, query);
+        const resultText = caseItem.results?.length ? caseItem.results[0] : caseItem.result;
+        if (resultText) {
+          result.highlights!.result = createHighlight(resultText, query);
+        }
       }
       
       results.push(result);

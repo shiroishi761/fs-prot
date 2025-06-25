@@ -241,6 +241,7 @@ export class GeminiService {
       region: extractInfo(['地域', '都道府県'], '東京都'),
       companySize: allText.includes('大手') || allText.includes('100人') ? 'large' : 
                    allText.includes('中小') || allText.includes('30') ? 'small' : 'medium',
+      orderStatus: allText.includes('失注') || allText.includes('断られ') || allText.includes('見送り') ? 'lost' : 'won',
       challenge: extractInfo(['課題', '問題', '困っている'], '業務効率化の課題'),
       proposal: extractInfo(['提案', '解決策'], 'CAREECONを活用した解決策'),
       result: extractInfo(['結果', '成果'], '検討中'),

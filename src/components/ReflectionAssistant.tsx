@@ -59,9 +59,13 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
     const relatedCases = cases.filter(c => {
       const sameIndustry = c.industry === reflection.industry;
       const sameSize = c.companySize === reflection.companySize;
-      const relatedContent = reflection.failurePoint && 
-        (c.challenge.includes(reflection.failurePoint) || 
-         c.proposal.includes(reflection.failurePoint));
+      const relatedContent = reflection.failurePoint && reflection.failurePoint.length > 0 && (
+        // 新しいデータ構造と古いデータ構造の両方に対応
+        (c.challenges?.some(challenge => challenge.includes(reflection.failurePoint!)) || 
+         c.challenge?.includes(reflection.failurePoint) ||
+         c.proposals?.some(proposal => proposal.includes(reflection.failurePoint!)) ||
+         c.proposal?.includes(reflection.failurePoint))
+      );
       
       return sameIndustry || sameSize || relatedContent;
     }).slice(0, 2);
@@ -353,7 +357,9 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
                     <div key={c.id} className="mb-2 p-2 bg-white rounded border border-green-200">
                       <p className="text-sm font-medium text-gray-800">{index + 1}. {c.title}</p>
                       <p className="text-xs text-gray-600 mt-1">{c.industry} / {c.companySize === 'small' ? '小規模' : c.companySize === 'medium' ? '中規模' : '大規模'}</p>
-                      <p className="text-xs text-gray-700 mt-1">提案: {c.proposal.substring(0, 50)}...</p>
+                      <p className="text-xs text-gray-700 mt-1">提案: {
+                        (c.proposals?.length ? c.proposals[0] : c.proposal || '情報なし').substring(0, 50)
+                      }...</p>
                     </div>
                   ))}
                 </div>

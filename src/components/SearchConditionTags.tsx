@@ -15,6 +15,8 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
     filters.query ||
     filters.industry ||
     filters.region ||
+    (filters.industries && filters.industries.length > 0) ||
+    (filters.regions && filters.regions.length > 0) ||
     filters.prefecture ||
     filters.city ||
     filters.companySize ||
@@ -46,14 +48,30 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
         </div>
       )}
 
-      {/* Industry tag */}
-      {filters.industry && (
+      {/* Industry tags */}
+      {filters.industries && filters.industries.map((industry) => (
+        <div key={industry} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full flex items-center gap-2">
+          <span>{industry}</span>
+          <button
+            onClick={() => onRemoveFilter('industries', industry)}
+            className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+            title={`業種「${industry}」を削除`}
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ))}
+
+      {/* Legacy industry tag for backward compatibility */}
+      {filters.industry && !filters.industries && (
         <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full flex items-center gap-2">
           <span>{filters.industry}</span>
           <button
             onClick={() => onRemoveFilter('industry')}
             className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
-            title="業界フィルターを削除"
+            title="業種フィルターを削除"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -62,8 +80,24 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
         </div>
       )}
 
-      {/* Location tag */}
-      {(filters.region || filters.prefecture || filters.city) && (
+      {/* Region tags */}
+      {filters.regions && filters.regions.map((region) => (
+        <div key={region} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full flex items-center gap-2">
+          <span>{region}</span>
+          <button
+            onClick={() => onRemoveFilter('regions', region)}
+            className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+            title={`地域「${region}」を削除`}
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ))}
+
+      {/* Legacy location tag for backward compatibility */}
+      {(filters.region || filters.prefecture || filters.city) && !filters.regions && (
         <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full flex items-center gap-2">
           <span>
             {[filters.region, filters.prefecture, filters.city].filter(Boolean).join(' > ')}

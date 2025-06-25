@@ -6,6 +6,8 @@ import SearchBox from './components/SearchBox';
 import CaseList from './components/CaseList';
 import CaseDetail from './components/CaseDetail';
 import { CaseCollector } from './components/CaseCollector';
+import { CaseAddForm } from './components/CaseAddForm';
+import { CaseReviewEdit } from './components/CaseReviewEdit';
 import Login from './components/Login';
 import SearchConditionTags from './components/SearchConditionTags';
 import './App.css';
@@ -20,8 +22,15 @@ function App() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [selectedCaseIndex, setSelectedCaseIndex] = useState<number>(-1);
   const [hasSearched, setHasSearched] = useState(false);
   const [showCaseCollector, setShowCaseCollector] = useState(false);
+  const [showCaseReviewEdit, setShowCaseReviewEdit] = useState(false);
+  const [caseBasicInfo, setCaseBasicInfo] = useState<any>(null);
+  const [aiGeneratedData, setAiGeneratedData] = useState<Partial<Case> | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatConversationHistory, setChatConversationHistory] = useState<any[]>([]);
+  console.log('Basic info:', caseBasicInfo); // デバッグ用
   const [mockCases, setMockCases] = useState<Case[]>(initialMockCases);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
@@ -67,13 +76,32 @@ function App() {
   const handleCaseSelect = (caseId: string) => {
     const caseData = mockCases.find(c => c.id === caseId);
     if (caseData) {
+      // Find the index in current search results
+      const index = searchResults.findIndex(result => result.case.id === caseId);
       setSelectedCase(caseData);
+      setSelectedCaseIndex(index);
+    }
+  };
+
+  // Handle case navigation
+  const handleCaseNavigate = (direction: 'prev' | 'next') => {
+    if (selectedCaseIndex === -1) return;
+    
+    const newIndex = direction === 'prev' 
+      ? selectedCaseIndex - 1 
+      : selectedCaseIndex + 1;
+    
+    if (newIndex >= 0 && newIndex < searchResults.length) {
+      const newCase = searchResults[newIndex].case;
+      setSelectedCase(newCase);
+      setSelectedCaseIndex(newIndex);
     }
   };
 
   // Handle case detail close
   const handleCaseDetailClose = () => {
     setSelectedCase(null);
+    setSelectedCaseIndex(-1);
   };
 
   // Handle filter changes (with automatic search for certain filters)
@@ -104,6 +132,14 @@ function App() {
       // Remove specific tag
       const updatedTags = filters.tags?.filter(tag => tag !== value) || [];
       newFilters.tags = updatedTags.length > 0 ? updatedTags : undefined;
+    } else if (filterType === 'industries' && value) {
+      // Remove specific industry
+      const updatedIndustries = filters.industries?.filter(industry => industry !== value) || [];
+      newFilters.industries = updatedIndustries.length > 0 ? updatedIndustries : undefined;
+    } else if (filterType === 'regions' && value) {
+      // Remove specific region
+      const updatedRegions = filters.regions?.filter(region => region !== value) || [];
+      newFilters.regions = updatedRegions.length > 0 ? updatedRegions : undefined;
     } else if (filterType === 'city') {
       // Remove city but keep prefecture and region
       newFilters.city = undefined;
@@ -166,11 +202,62 @@ function App() {
 
   // Handle navigation
   const handleNavigation = (view: ViewMode) => {
+    // チャット画面や確認・編集画面が開いている場合はそれらをクローズ
+    setShowCaseCollector(false);
+    setShowCaseReviewEdit(false);
+    // 会話履歴もクリア
+    setChatMessages([]);
+    setChatConversationHistory([]);
     setCurrentView(view);
     setSidebarOpen(false);
-    if (view === 'add') {
-      setShowCaseCollector(true);
-    }
+  };
+
+  // Start AI interview with basic info
+  const handleStartInterview = (basicInfo: any) => {
+    setCaseBasicInfo(basicInfo);
+    setShowCaseCollector(true);
+  };
+
+  // Handle review/edit flow from AI hearing
+  const handleReviewEdit = (aiData: Partial<Case>, messages: any[], conversationHistory: any[]) => {
+    setAiGeneratedData(aiData);
+    setChatMessages(messages);
+    setChatConversationHistory(conversationHistory);
+    setShowCaseCollector(false);
+    setShowCaseReviewEdit(true);
+  };
+
+  // Handle back to chat from review/edit screen
+  const handleBackToChat = () => {
+    setShowCaseReviewEdit(false);
+    setShowCaseCollector(true);
+  };
+
+  // Handle save from review/edit screen
+  const handleSave = (caseData: Partial<Case>) => {
+    const newCaseWithId: Case = {
+      ...caseData,
+      id: `case-${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      title: caseData.title || '',
+      industry: caseData.industry || '',
+      region: caseData.region || '',
+      challenges: caseData.challenges || [],
+      needs: caseData.needs || [],
+      proposals: caseData.proposals || [],
+      results: caseData.results || [],
+      tags: [],
+      orderStatus: 'in_progress'
+    } as Case;
+    
+    setMockCases(prev => [newCaseWithId, ...prev]);
+    setShowCaseReviewEdit(false);
+    setCurrentView('search');
+    
+    // Re-run search to include new case
+    const results = searchCases([newCaseWithId, ...mockCases], filters, favorites);
+    setSearchResults(results);
   };
 
   // Show login screen if not authenticated
@@ -265,8 +352,8 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="w-full max-w-7xl mx-auto px-4 py-6 my-10">
-        {currentView === 'search' && (
+        <div className="w-full max-w-7xl mx-auto px-4 py-10 my-6">
+        {currentView === 'search' && !showCaseCollector && !showCaseReviewEdit && (
           <>
             {/* Search Section */}
             <div className="mb-2">
@@ -297,7 +384,7 @@ function App() {
           </>
         )}
 
-        {currentView === 'list' && (
+        {currentView === 'list' && !showCaseCollector && !showCaseReviewEdit && (
           <>
             {/* List Section */}
             <div className="mb-4">
@@ -321,27 +408,34 @@ function App() {
           </>
         )}
 
-        {currentView === 'add' && (
-          <>
-            {/* Add Section */}
-            <div className="mb-4 text-center">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  事例追加
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  下のボタンをクリックして新しい事例を追加できます
-                </p>
-                
-                <button
-                  onClick={() => setShowCaseCollector(true)}
-                  className="bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-medium shadow-lg"
-                >
-                  事例を追加する
-                </button>
-              </div>
-            </div>
-          </>
+        {currentView === 'add' && !showCaseCollector && !showCaseReviewEdit && (
+          <CaseAddForm
+            onStartInterview={handleStartInterview}
+            onClose={() => setCurrentView('search')}
+          />
+        )}
+
+        {showCaseCollector && !showCaseReviewEdit && (
+          <CaseCollector
+            onCaseCollected={handleCaseCollected}
+            onReviewEdit={handleReviewEdit}
+            onClose={() => {
+              setShowCaseCollector(false);
+              setCurrentView('search');
+            }}
+            basicInfo={caseBasicInfo}
+            savedMessages={chatMessages}
+            savedConversationHistory={chatConversationHistory}
+          />
+        )}
+
+        {showCaseReviewEdit && !showCaseCollector && caseBasicInfo && aiGeneratedData && (
+          <CaseReviewEdit
+            basicInfo={caseBasicInfo}
+            aiGeneratedData={aiGeneratedData}
+            onSave={handleSave}
+            onBackToChat={handleBackToChat}
+          />
         )}
         </div>
       </main>
@@ -351,17 +445,13 @@ function App() {
         <CaseDetail
           case={selectedCase}
           onClose={handleCaseDetailClose}
-          onCaseSelect={handleCaseSelect}
+          onNavigate={handleCaseNavigate}
+          hasPrev={selectedCaseIndex > 0}
+          hasNext={selectedCaseIndex < searchResults.length - 1}
         />
       )}
 
-      {/* Case Collector Modal */}
-      {showCaseCollector && (
-        <CaseCollector
-          onCaseCollected={handleCaseCollected}
-          onClose={() => setShowCaseCollector(false)}
-        />
-      )}
+
 
 
     </div>

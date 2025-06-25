@@ -155,10 +155,15 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
       // よく出てくる課題を分析
       const challengeKeywords = new Map<string, number>();
       successCases.forEach(c => {
-        if (c.challenge.includes('人材不足')) challengeKeywords.set('人材不足', (challengeKeywords.get('人材不足') || 0) + 1);
-        if (c.challenge.includes('コスト')) challengeKeywords.set('コスト削減', (challengeKeywords.get('コスト削減') || 0) + 1);
-        if (c.challenge.includes('工期')) challengeKeywords.set('工期短縮', (challengeKeywords.get('工期短縮') || 0) + 1);
-        if (c.challenge.includes('品質')) challengeKeywords.set('品質向上', (challengeKeywords.get('品質向上') || 0) + 1);
+        // 新しいデータ構造と古いデータ構造の両方に対応
+        const challenges = c.challenges?.length ? c.challenges : (c.challenge ? [c.challenge] : []);
+        
+        challenges.forEach(challenge => {
+          if (challenge.includes('人材不足')) challengeKeywords.set('人材不足', (challengeKeywords.get('人材不足') || 0) + 1);
+          if (challenge.includes('コスト')) challengeKeywords.set('コスト削減', (challengeKeywords.get('コスト削減') || 0) + 1);
+          if (challenge.includes('工期')) challengeKeywords.set('工期短縮', (challengeKeywords.get('工期短縮') || 0) + 1);
+          if (challenge.includes('品質')) challengeKeywords.set('品質向上', (challengeKeywords.get('品質向上') || 0) + 1);
+        });
       });
 
       // 最も多い課題についてアドバイス
@@ -483,7 +488,9 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
                   {relatedCases.slice(0, 3).map((c, index) => (
                     <div key={c.id} className="text-sm bg-green-50 p-3 rounded border border-green-200">
                       <p className="font-medium text-green-800">{index + 1}. {c.title}</p>
-                      <p className="text-xs text-gray-600 mt-1">課題: {c.challenge.substring(0, 50)}...</p>
+                      <p className="text-xs text-gray-600 mt-1">課題: {
+                        (c.challenges?.length ? c.challenges[0] : c.challenge || '情報なし').substring(0, 50)
+                      }...</p>
                     </div>
                   ))}
                 </div>
@@ -495,7 +502,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
                 onClick={() => setStep('input')}
                 className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
               >
-                戻る
+                キャンセル
               </button>
               <button
                 onClick={onClose}

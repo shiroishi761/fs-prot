@@ -3,16 +3,25 @@ export interface Case {
   id: string;
   title: string;
   industry: string;
+  industries?: string[]; // 複数業種対応
   region: string;
   prefecture?: string;
   city?: string;
   companySize: 'small' | 'medium' | 'large'; // small: ~50名, medium: 50-300名, large: 300名~
-  challenge: string;
-  proposal: string;
-  result: string;
+  orderStatus: 'won' | 'lost' | 'in_progress'; // 受注(won) / 失注(lost) / 進行中(in_progress)
+  challenges?: string[];  // 複数の課題（現在困っていること）
+  challengeSummaries?: string[]; // 複数の課題要約（カード見出し用）
+  needs?: string[];       // 複数のニーズ（課題解決後に目指したい状態）
+  proposals?: string[];   // 複数の提案内容（受注時のみ）
+  results?: string[];     // 複数の効果・結果（導入後のみ、営業マン以外が記録）
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
+  // 後方互換性のため残しておく（古い形式）
+  challenge?: string;
+  challengeSummary?: string; // 単一課題要約（後方互換性用）
+  proposal?: string;
+  result?: string;
 }
 
 // 振り返りデータの型定義（検索対象外の内部データ）
@@ -33,8 +42,8 @@ export interface Reflection {
 // 検索フィルターの型定義
 export interface SearchFilters {
   query?: string;
-  industry?: string;
-  region?: string;
+  industries?: string[];
+  regions?: string[];
   prefecture?: string;
   city?: string;
   companySize?: 'small' | 'medium' | 'large';
@@ -42,6 +51,9 @@ export interface SearchFilters {
   dateFrom?: Date;
   dateTo?: Date;
   favorites?: boolean; // お気に入りのみ表示
+  // 後方互換性のため残しておく（段階的移行用）
+  industry?: string;
+  region?: string;
 }
 
 // 検索結果の型定義
@@ -152,6 +164,8 @@ export const AREA_HIERARCHY = {
 
 // よく使われるタグ
 export const COMMON_TAGS = [
+  '受注',
+  '失注',
   '季節変動対策',
   '利益率改善',
   '営業時間不足',

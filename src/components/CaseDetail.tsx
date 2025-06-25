@@ -1,27 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import { Case } from '../types/case';
-import { getRelatedCases } from '../utils/search';
-import { mockCases } from '../data/mockCases';
 
 interface CaseDetailProps {
   case: Case | null;
   onClose: () => void;
-  onCaseSelect: (caseId: string) => void;
+  onNavigate?: (direction: 'prev' | 'next') => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
 const CaseDetail: React.FC<CaseDetailProps> = ({ 
   case: caseData, 
-  onClose, 
-  onCaseSelect 
+  onClose,
+  onNavigate,
+  hasPrev = false,
+  hasNext = false
 }) => {
-  const [relatedCases, setRelatedCases] = useState<Case[]>([]);
+  // State for expanding sections
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
-    if (caseData) {
-      const related = getRelatedCases(caseData, mockCases, 5);
-      setRelatedCases(related);
+  // Toggle section expansion
+  const toggleSection = (sectionIndex: number) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionIndex)) {
+        newSet.delete(sectionIndex);
+      } else {
+        newSet.add(sectionIndex);
+      }
+      return newSet;
+    });
+  };
+
+  // Generate summary for header using challenge summary or fallback to challenge content
+  const generateSummary = (challenge?: string | null, challengeSummary?: string | null) => {
+    // Prefer challenge summary if available
+    if (challengeSummary) {
+      return challengeSummary;
     }
-  }, [caseData]);
+    // Fallback to truncated challenge content
+    if (challenge) {
+      return challenge.substring(0, 100) + (challenge.length > 100 ? '...' : '');
+    }
+    return '';
+  };
 
   // Get company size label
   const getCompanySizeLabel = (size: string) => {
@@ -33,6 +55,19 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
     }
   };
 
+  // Format industries for display
+  const formatIndustries = (caseData: Case) => {
+    const industries = caseData.industries || [caseData.industry];
+    
+    if (industries.length === 1) {
+      return industries[0];
+    } else if (industries.length === 2) {
+      return `${industries[0]} ・ ${industries[1]}`;
+    } else {
+      return `${industries[0]} 他${industries.length - 1}業種`;
+    }
+  };
+
   // Handle backdrop click
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -40,17 +75,28 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
     }
   };
 
-  // Handle escape key
+  // Reset expanded sections when case changes
   useEffect(() => {
-    const handleEscapeKey = (e: KeyboardEvent) => {
+    if (caseData) {
+      setExpandedSections(new Set());
+    }
+  }, [caseData?.id]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.key === 'ArrowLeft' && hasPrev && onNavigate) {
+        onNavigate('prev');
+      } else if (e.key === 'ArrowRight' && hasNext && onNavigate) {
+        onNavigate('next');
       }
     };
 
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, [onClose]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, onNavigate, hasPrev, hasNext]);
 
   if (!caseData) {
     return null;
@@ -58,191 +104,217 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleBackdropClick}>
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900 pr-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        {/* Header - Fixed */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between rounded-t-lg">
+          <h1 className="text-lg font-semibold text-gray-900 pr-4">
             {caseData.title}
           </h1>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {/* Meta information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+        {/* Meta information - Fixed */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               <div>
-                <div className="text-sm text-gray-500">業界</div>
-                <div className="font-medium">{caseData.industry}</div>
+                <div className="text-xs text-gray-500">メイン業種</div>
+                <div className="text-sm font-medium" title={caseData.industries?.join(', ') || caseData.industry}>
+                  {formatIndustries(caseData)}
+                </div>
               </div>
             </div>
             
             <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <div>
-                <div className="text-sm text-gray-500">地域</div>
-                <div className="font-medium">{[caseData.region, caseData.prefecture, caseData.city].filter(Boolean).join(' > ')}</div>
+                <div className="text-xs text-gray-500">地域</div>
+                <div className="text-sm font-medium">{[caseData.region, caseData.prefecture, caseData.city].filter(Boolean).join(' > ')}</div>
               </div>
             </div>
             
             <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <div>
-                <div className="text-sm text-gray-500">企業規模</div>
-                <div className="font-medium">{getCompanySizeLabel(caseData.companySize)}</div>
+                <div className="text-xs text-gray-500">企業規模</div>
+                <div className="text-sm font-medium">{getCompanySizeLabel(caseData.companySize)}</div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Tags */}
-          <div className="mb-8">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">関連タグ</h3>
-            <div className="flex flex-wrap gap-2">
-              {caseData.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
           {/* Main content sections */}
-          <div className="space-y-8">
-            {/* Challenge */}
-            <section>
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">課題</h2>
-              </div>
-              <div className="bg-red-50 rounded-lg p-4">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {caseData.challenge}
-                </p>
-              </div>
-            </section>
+          <div className="space-y-6">
+            {/* Challenge-Need-Proposal Flow */}
+            {(() => {
+              // Determine the actual number of sets based on available data
+              const challengesCount = caseData.challenges?.length || (caseData.challenge ? 1 : 0);
+              const needsCount = caseData.needs?.length || 0;
+              const proposalsCount = (caseData.orderStatus === 'won') ? 
+                (caseData.proposals?.length || (caseData.proposal ? 1 : 0)) : 0;
 
-            {/* Proposal */}
-            <section>
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">ご提案</h2>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {caseData.proposal}
-                </p>
-              </div>
-            </section>
+              // Create sets based on the maximum available data, but ensure we have meaningful content
+              const items = [];
+              const maxSets = Math.max(challengesCount, needsCount, proposalsCount);
+              
+              for (let i = 0; i < maxSets; i++) {
+                const challenge = caseData.challenges?.[i] || (i === 0 ? caseData.challenge : null);
+                const challengeSummary = caseData.challengeSummaries?.[i] || (i === 0 ? caseData.challengeSummary : null);
+                const need = caseData.needs?.[i] || null;
+                const proposal = (caseData.orderStatus === 'won') ? 
+                  (caseData.proposals?.[i] || (i === 0 ? caseData.proposal : null)) : null;
 
-            {/* Result */}
-            <section>
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">効果・結果</h2>
-              </div>
-              <div className="bg-green-50 rounded-lg p-4">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {caseData.result}
-                </p>
-              </div>
-            </section>
-          </div>
+                // Only add sets that have at least one piece of content
+                if (challenge || need || proposal) {
+                  items.push({ challenge, challengeSummary, need, proposal, index: i });
+                }
+              }
 
-          {/* Related cases */}
-          {relatedCases.length > 0 && (
-            <section className="mt-12 pt-8 border-t border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                関連する事例
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {relatedCases.map((relatedCase) => (
-                  <div
-                    key={relatedCase.id}
-                    onClick={() => onCaseSelect(relatedCase.id)}
-                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+              // If we have more than 3 items, we might want to limit or group them differently
+              // For now, we'll show all available sets
+
+              return items.map(({ challenge, challengeSummary, need, proposal, index }) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                  {/* Flow Header with Summary and Toggle */}
+                  <button
+                    onClick={() => toggleSection(index)}
+                    className="w-full bg-gray-50 px-4 py-3 border-b border-gray-200 hover:bg-gray-100 transition-colors"
                   >
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                      {relatedCase.title}
-                    </h3>
-                    <div className="flex items-center text-sm text-gray-500 mb-2">
-                      <span>{relatedCase.industry}</span>
-                      <span className="mx-2">•</span>
-                      <span>{relatedCase.region}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 text-left">
+                        <p className="text-base text-gray-800 leading-relaxed font-medium">
+                          {generateSummary(challenge, challengeSummary)}
+                        </p>
+                      </div>
+                      <svg 
+                        className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections.has(index) ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {relatedCase.tags.slice(0, 3).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {relatedCase.tags.length > 3 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
-                          +{relatedCase.tags.length - 3}
-                        </span>
+                  </button>
+
+                  {/* Expanded Content */}
+                  {expandedSections.has(index) && (
+                    <div className="p-4 space-y-4">
+                      {/* Challenge */}
+                      {challenge && (
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-red-700 mb-2">課題</h4>
+                            <p className="text-sm text-gray-700 leading-relaxed">{challenge}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Need */}
+                      {need && (
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-purple-700 mb-2">ニーズ</h4>
+                            <p className="text-sm text-gray-700 leading-relaxed">{need}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Proposal */}
+                      {proposal && (
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-blue-700 mb-2">提案</h4>
+                            <p className="text-sm text-gray-700 leading-relaxed">{proposal}</p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
 
-          {/* Footer with meta information */}
-          <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
-            <div className="flex justify-between items-center">
-              <div>
-                作成日: {caseData.createdAt.toLocaleDateString('ja-JP')}
-              </div>
-              <div>
-                更新日: {caseData.updatedAt.toLocaleDateString('ja-JP')}
-              </div>
+        {/* Footer with navigation and meta information - Fixed */}
+        <div className="bg-white border-t border-gray-200 px-6 py-4 text-sm text-gray-500 rounded-b-lg">
+          <div className="relative flex items-center justify-center">
+            {/* Navigation buttons - center */}
+            <div className="flex items-center">
+              {onNavigate && (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => onNavigate('prev')}
+                    disabled={!hasPrev}
+                    className={`p-2 rounded-md transition-colors ${
+                      hasPrev
+                        ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                        : 'text-gray-300 cursor-not-allowed'
+                    }`}
+                    title="前の事例 (←)"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('next')}
+                    disabled={!hasNext}
+                    className={`p-2 rounded-md transition-colors ${
+                      hasNext
+                        ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                        : 'text-gray-300 cursor-not-allowed'
+                    }`}
+                    title="次の事例 (→)"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Creation date - absolute positioned on right */}
+            <div className="absolute right-0">
+              作成日: {caseData.createdAt.toLocaleDateString('ja-JP')}
             </div>
           </div>
         </div>
 
-        {/* Back to list button */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
-          <button
-            onClick={onClose}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium transition-colors"
-          >
-            一覧に戻る
-          </button>
-        </div>
       </div>
     </div>
   );

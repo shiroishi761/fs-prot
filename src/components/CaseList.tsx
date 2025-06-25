@@ -18,18 +18,45 @@ const CaseList: React.FC<CaseListProps> = ({
   onToggleFavorite
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('desc');
   const itemsPerPage = 6;
 
+  const handleDateSort = () => {
+    if (sortOrder === 'desc') {
+      setSortOrder('asc');
+    } else {
+      setSortOrder('desc');
+    }
+  };
+
+  // Sort results by creation date if sort order is set
+  const sortedResults = React.useMemo(() => {
+    if (sortOrder === 'none') {
+      return searchResults;
+    }
+    
+    return [...searchResults].sort((a, b) => {
+      const dateA = new Date(a.case.createdAt).getTime();
+      const dateB = new Date(b.case.createdAt).getTime();
+      
+      if (sortOrder === 'asc') {
+        return dateA - dateB;
+      } else {
+        return dateB - dateA;
+      }
+    });
+  }, [searchResults, sortOrder]);
+
   // Calculate pagination
-  const totalPages = Math.ceil(searchResults.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentResults = searchResults.slice(startIndex, endIndex);
+  const currentResults = sortedResults.slice(startIndex, endIndex);
 
-  // Reset to first page when search results change
+  // Reset to first page when search results or sort order changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchResults]);
+  }, [searchResults, sortOrder]);
 
   if (loading) {
     return (
@@ -96,22 +123,25 @@ const CaseList: React.FC<CaseListProps> = ({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Header with results count and view toggle */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          
-          {/* Search status */}
-          {searchResults.some(result => result.relevanceScore < 1.0) && (
-            <div className="flex items-center text-sm text-gray-500">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              関連度順で表示
-            </div>
+    <div className="space-y-0" style={{ gap: '8px', display: 'flex', flexDirection: 'column' }}>
+      {/* Sort controls */}
+      <div className="flex justify-end ">
+        <div 
+          onClick={handleDateSort}
+          className="flex items-center px-3 py-1 bg-gray-100 rounded cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          <span className="text-sm text-gray-700 mr-1">作成日</span>
+          {sortOrder === 'desc' && (
+            <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          )}
+          {sortOrder === 'asc' && (
+            <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
           )}
         </div>
-
       </div>
 
       {/* Results grid */}
@@ -129,7 +159,7 @@ const CaseList: React.FC<CaseListProps> = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 pt-4">
+        <div className="flex justify-center items-center space-x-2 py-4">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
@@ -192,14 +222,9 @@ const CaseList: React.FC<CaseListProps> = ({
       )}
 
       {/* Results summary */}
-      {searchResults.length > 0 && (
-        <div className="text-center text-sm text-gray-500 pt-2 border-t border-gray-200">
-          全{searchResults.length}件中 {startIndex + 1}-{Math.min(endIndex, searchResults.length)}件を表示
-          {searchResults.some(result => result.relevanceScore < 1.0) && (
-            <div className="mt-2">
-              関連度の高い順に並んでいます
-            </div>
-          )}
+      {sortedResults.length > 0 && (
+        <div className="text-center text-sm text-gray-500 py-4 border-t border-gray-200">
+          全{sortedResults.length}件中 {startIndex + 1}-{Math.min(endIndex, sortedResults.length)}件を表示
         </div>
       )}
     </div>

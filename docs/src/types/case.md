@@ -27,8 +27,12 @@ interface Case {
 ```typescript
 interface SearchFilters {
   query?: string;               // キーワード検索
-  industry?: string;            // 業種フィルター
-  region?: string;              // 地域フィルター
+  industry?: string;            // 業種フィルター（後方互換性）
+  industries?: string[];        // 業種フィルター（複数選択）
+  region?: string;              // 地域フィルター（後方互換性）
+  regions?: string[];           // 地域フィルター（複数選択）
+  prefecture?: string;          // 都道府県フィルター
+  city?: string;                // 市区町村フィルター
   companySize?: 'small' | 'medium' | 'large'; // 企業規模フィルター
   tags?: string[];              // タグフィルター
 }
@@ -46,28 +50,33 @@ interface SearchResult {
 ```
 
 ## 企業規模の定義
-- `small`: 小規模（〜30名）
-- `medium`: 中規模（30〜100名）  
-- `large`: 大規模（100名〜）
+- `small`: 小規模（〜50名）
+- `medium`: 中規模（50〜300名）  
+- `large`: 大規模（300名〜）
 
 ## 業種の例
-- 建築業
-- 土木工事業
-- 設備工事業
-- 内装工事業
-- 電気工事業
+- 建設業
+- 製造業
+- 不動産業
+- 運輸業
+- 情報通信業
+- 卸売・小売業
+- 金融・保険業
+- サービス業
 
 ## 使用箇所
 - `CaseCollector` - 新規事例作成時
-- `SearchBox` - フィルター設定時
+- `SearchBox` - フィルター設定時（複数選択UI対応）
 - `CaseList` - 検索結果表示時
-- `search.ts` - 検索処理時
+- `SearchConditionTags` - 選択条件表示時
+- `search.ts` - 検索処理時（複数選択対応）
 
 ## 型拡張の影響範囲
 - **SearchFilters拡張時の影響箇所:**
-  - `utils/search.ts` - searchCases関数の対応
-  - `components/SearchBox.tsx` - UI要素追加
-  - `App.tsx` - 状態管理追加（必要に応じて）
+  - `utils/search.ts` - searchCases関数の対応（複数選択対応済み）
+  - `components/SearchBox.tsx` - UI要素追加（複数選択UI実装済み）
+  - `components/SearchConditionTags.tsx` - 条件表示対応
+  - `App.tsx` - 状態管理追加（フィルター削除ロジック対応済み）
 
 ## 拡張時の注意点
 - 企業規模は列挙型のため、追加時は関連コンポーネントも更新
