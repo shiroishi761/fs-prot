@@ -10,6 +10,7 @@
 - 関連度スコアの視覚的表示
 - お気に入りボタン（ハートアイコン）
 - クリックでの詳細表示
+- アクションボタン（編集・削除・ヒヤリング再開）※マイ事例のみ
 
 ## 依存関係
 - `../types/case.ts` - SearchResult型定義
@@ -19,8 +20,12 @@
 interface CaseCardProps {
   searchResult: SearchResult;    // 事例データと検索情報
   onClick: () => void;           // カードクリック時の処理
-  isFavorite: boolean;           // お気に入り状態
-  onToggleFavorite: () => void;  // お気に入りトグル処理
+  isFavorite?: boolean;          // お気に入り状態（オプション）
+  onToggleFavorite?: () => void; // お気に入りトグル処理（オプション）
+  showActions?: boolean;         // アクションボタンの表示フラグ
+  onEdit?: () => void;           // 編集ボタンのクリック処理
+  onDelete?: () => void;         // 削除ボタンのクリック処理
+  onContinue?: () => void;       // ヒヤリング再開ボタンのクリック処理
 }
 ```
 
@@ -45,7 +50,12 @@ interface CaseCardProps {
 - **登録日** - 右側に表示、日本語形式
 - **残りタグ数** - 4個を超える場合は"+N"で表示
 
-### 5. フッター情報
+### 5. アクションボタン（マイ事例のみ）
+- **ヒヤリング再開ボタン** - 進行中事例のみ表示（青色）
+- **編集ボタン** - 全ての事例で表示（緑色）
+- **削除ボタン** - 全ての事例で表示（赤色）
+
+### 6. フッター情報
 - **マッチしたフィールド** - title, challenge, tags等
 - **登録日表示** - 課題種別と同行に右寄せで表示
 
@@ -80,12 +90,26 @@ interface CaseCardProps {
 - **ボタンハイライト**: お気に入りボタンの色変化
 
 ## 使用パターン
+
+### 事例検索ページ
 ```typescript
 <CaseCard
   searchResult={result}
   onClick={() => showDetail(result.case.id)}
   isFavorite={favorites.has(result.case.id)}
   onToggleFavorite={() => toggleFavorite(result.case.id)}
+/>
+```
+
+### マイ事例ページ
+```typescript
+<CaseCard
+  searchResult={result}
+  onClick={() => showDetail(result.case.id)}
+  showActions={true}
+  onEdit={() => handleEditCase(result.case.id)}
+  onDelete={() => handleDeleteCase(result.case.id)}
+  onContinue={() => handleContinueCase(result.case.id)}
 />
 ```
 

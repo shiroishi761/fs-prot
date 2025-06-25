@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { SearchFilters, SearchResult, Case } from './types/case';
+import { SearchFilters, Case } from './types/case';
 import { searchCases } from './utils/search';
 import { mockCases as initialMockCases } from './data/mockCases';
+import { useFavorites } from './hooks/useFavorites';
+import { useSearch } from './hooks/useSearch';
+import { useCaseNavigation } from './hooks/useCaseNavigation';
+import { createBasicInfoFromCase, generateCaseId, updateCaseTags } from './utils/caseUtils';
 import SearchBox from './components/SearchBox';
 import CaseList from './components/CaseList';
 import CaseDetail from './components/CaseDetail';
@@ -16,167 +20,57 @@ import './App.css';
 type ViewMode = 'search' | 'list' | 'add';
 
 function App() {
+  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // UI state
   const [currentView, setCurrentView] = useState<ViewMode>('search');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [filters, setFilters] = useState<SearchFilters>({});
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
-  const [selectedCaseIndex, setSelectedCaseIndex] = useState<number>(-1);
-  const [hasSearched, setHasSearched] = useState(false);
   const [showCaseCollector, setShowCaseCollector] = useState(false);
   const [showCaseReviewEdit, setShowCaseReviewEdit] = useState(false);
+  
+  // Case data state
+  const [mockCases, setMockCases] = useState<Case[]>(initialMockCases);
+  const [myPageFilters, setMyPageFilters] = useState<SearchFilters>({});
+  
+  // Chat state
   const [caseBasicInfo, setCaseBasicInfo] = useState<any>(null);
   const [aiGeneratedData, setAiGeneratedData] = useState<Partial<Case> | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatConversationHistory, setChatConversationHistory] = useState<any[]>([]);
-  console.log('Basic info:', caseBasicInfo); // デバッグ用
-  const [mockCases, setMockCases] = useState<Case[]>(initialMockCases);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [myPageFilters, setMyPageFilters] = useState<SearchFilters>({});
+  
+  // Custom hooks
+  const { favorites, toggleFavorite } = useFavorites();
+  const {
+    filters,
+    searchResults,
+    loading,
+    hasSearched,
+    updateSearchResults,
+    handleSearch,
+    handleFiltersChange,
+    handleRemoveFilter
+  } = useSearch(mockCases, favorites);
+  const {
+    selectedCase,
+    selectedCaseIndex,
+    handleCaseSelect,
+    handleCaseNavigate,
+    handleCaseDetailClose
+  } = useCaseNavigation(searchResults);
 
-  // Load favorites from localStorage
+
+  // Initialize search results when mockCases or favorites change
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('careeco-favorites');
-    if (savedFavorites) {
-      try {
-        const favoritesArray = JSON.parse(savedFavorites);
-        setFavorites(new Set(favoritesArray));
-      } catch (error) {
-        console.error('Failed to load favorites from localStorage:', error);
-      }
-    }
-  }, []);
+    updateSearchResults();
+  }, [updateSearchResults]);
 
-  // Save favorites to localStorage
-  useEffect(() => {
-    localStorage.setItem('careeco-favorites', JSON.stringify(Array.from(favorites)));
-  }, [favorites]);
-
-  // Initialize with all cases (published only for search page)
-  useEffect(() => {
-    const searchFilters = { publicationStatus: 'published' as const };
-    const initialResults = searchCases(mockCases, searchFilters, favorites);
-    setSearchResults(initialResults);
-  }, [mockCases, favorites]);
-
-  // Handle search
-  const handleSearch = async () => {
-    setLoading(true);
-    setHasSearched(true);
-    
-    // Simulate API delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Add publicationStatus filter for search page to show only published cases
-    const searchFilters = { ...filters, publicationStatus: 'published' as const };
-    const results = searchCases(mockCases, searchFilters, favorites);
-    setSearchResults(results);
-    setLoading(false);
-  };
-
-  // Handle case selection
-  const handleCaseSelect = (caseId: string) => {
-    const caseData = mockCases.find(c => c.id === caseId);
-    if (caseData) {
-      // Find the index in current search results
-      const index = searchResults.findIndex(result => result.case.id === caseId);
-      setSelectedCase(caseData);
-      setSelectedCaseIndex(index);
-    }
-  };
-
-  // Handle case navigation
-  const handleCaseNavigate = (direction: 'prev' | 'next') => {
-    if (selectedCaseIndex === -1) return;
-    
-    const newIndex = direction === 'prev' 
-      ? selectedCaseIndex - 1 
-      : selectedCaseIndex + 1;
-    
-    if (newIndex >= 0 && newIndex < searchResults.length) {
-      const newCase = searchResults[newIndex].case;
-      setSelectedCase(newCase);
-      setSelectedCaseIndex(newIndex);
-    }
-  };
-
-  // Handle case detail close
-  const handleCaseDetailClose = () => {
-    setSelectedCase(null);
-    setSelectedCaseIndex(-1);
-  };
-
-  // Handle filter changes (with automatic search for certain filters)
-  const handleFiltersChange = (newFilters: SearchFilters) => {
-    setFilters(newFilters);
-    
-    // Auto-search when filters change (except for query)
-    const filtersChanged = Object.keys(newFilters).some(key => {
-      if (key === 'query') return false;
-      return newFilters[key as keyof SearchFilters] !== filters[key as keyof SearchFilters];
-    });
-    
-    if (filtersChanged) {
-      // Perform search automatically when non-query filters change
-      setTimeout(() => {
-        // Add publicationStatus filter for search page to show only published cases
-        const searchFilters = { ...newFilters, publicationStatus: 'published' as const };
-        const results = searchCases(mockCases, searchFilters, favorites);
-        setSearchResults(results);
-        setHasSearched(true);
-      }, 100);
-    }
-  };
-
-  // Handle removing individual filters
-  const handleRemoveFilter = (filterType: keyof SearchFilters, value?: string) => {
-    const newFilters = { ...filters };
-    
-    if (filterType === 'tags' && value) {
-      // Remove specific tag
-      const updatedTags = filters.tags?.filter(tag => tag !== value) || [];
-      newFilters.tags = updatedTags.length > 0 ? updatedTags : undefined;
-    } else if (filterType === 'industries' && value) {
-      // Remove specific industry
-      const updatedIndustries = filters.industries?.filter(industry => industry !== value) || [];
-      newFilters.industries = updatedIndustries.length > 0 ? updatedIndustries : undefined;
-    } else if (filterType === 'regions' && value) {
-      // Remove specific region
-      const updatedRegions = filters.regions?.filter(region => region !== value) || [];
-      newFilters.regions = updatedRegions.length > 0 ? updatedRegions : undefined;
-    } else if (filterType === 'city') {
-      // Remove city but keep prefecture and region
-      newFilters.city = undefined;
-    } else if (filterType === 'prefecture') {
-      // Remove prefecture and city but keep region
-      newFilters.prefecture = undefined;
-      newFilters.city = undefined;
-    } else if (filterType === 'region') {
-      // Remove all location filters
-      newFilters.region = undefined;
-      newFilters.prefecture = undefined;
-      newFilters.city = undefined;
-    } else {
-      // Remove the entire filter
-      newFilters[filterType] = undefined;
-    }
-    
-    setFilters(newFilters);
-    
-    // Perform search with updated filters (add publicationStatus for search page)
-    const searchFilters = { ...newFilters, publicationStatus: 'published' as const };
-    const results = searchCases(mockCases, searchFilters, favorites);
-    setSearchResults(results);
-    setHasSearched(true);
-  };
 
   // Handle new case collection
   const handleCaseCollected = (newCase: Omit<Case, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newCaseWithId: Case = {
       ...newCase,
-      id: `case-${Date.now()}`,
+      id: generateCaseId(),
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -192,23 +86,8 @@ function App() {
     setChatConversationHistory([]);
     setCaseBasicInfo(null);
     
-    // Re-run search to include new case (only published cases for search page)
-    const searchFilters = { ...filters, publicationStatus: 'published' as const };
-    const results = searchCases([newCaseWithId, ...mockCases], searchFilters, favorites);
-    setSearchResults(results);
-  };
-
-  // Handle favorite toggle
-  const handleToggleFavorite = (caseId: string) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(caseId)) {
-        newFavorites.delete(caseId);
-      } else {
-        newFavorites.add(caseId);
-      }
-      return newFavorites;
-    });
+    // Re-run search to include new case
+    updateSearchResults();
   };
 
   // Handle login
@@ -279,7 +158,7 @@ function App() {
         results: caseData.results || existingCase.results || [],
         // Update orderStatus and tags based on the selected status
         orderStatus: caseData.orderStatus || existingCase.orderStatus,
-        tags: caseData.orderStatus === 'won' ? ['受注'] : caseData.orderStatus === 'lost' ? ['失注'] : existingCase.tags || ['進行中']
+        tags: updateCaseTags(caseData.orderStatus || existingCase.orderStatus)
       };
       
       updatedCases = mockCases.map(c => c.id === existingCase.id ? updatedCase : c);
@@ -288,7 +167,7 @@ function App() {
       // Create new case
       const newCaseWithId: Case = {
         ...caseData,
-        id: `case-${Date.now()}`,
+        id: generateCaseId(),
         createdAt: new Date(),
         updatedAt: new Date(),
         title: caseData.title || '',
@@ -298,7 +177,7 @@ function App() {
         needs: caseData.needs || [],
         proposals: caseData.proposals || [],
         results: caseData.results || [],
-        tags: caseData.orderStatus === 'won' ? ['受注'] : caseData.orderStatus === 'lost' ? ['失注'] : ['進行中'],
+        tags: updateCaseTags(caseData.orderStatus || 'in_progress'),
         orderStatus: caseData.orderStatus || 'in_progress'
       } as Case;
       
@@ -320,26 +199,15 @@ function App() {
       setMyPageFilters({});
     }
     
-    // Re-run search to include updated cases (use the immediately updated cases, only published cases for search page)
-    const searchFilters = { ...filters, publicationStatus: 'published' as const };
-    const results = searchCases(updatedCases, searchFilters, favorites);
-    setSearchResults(results);
+    // Re-run search to include updated cases
+    updateSearchResults();
   };
 
   // Handle edit case
   const handleEditCase = (caseId: string) => {
     const caseToEdit = mockCases.find(c => c.id === caseId);
     if (caseToEdit) {
-      // Create basic info from the case data
-      const basicInfo = {
-        companyName: caseToEdit.companyName || '',
-        industry: caseToEdit.industries || [caseToEdit.industry],
-        mainIndustry: caseToEdit.industry,
-        region: caseToEdit.region,
-        prefecture: caseToEdit.prefecture || '',
-        city: caseToEdit.city || '',
-        companySize: caseToEdit.companySize
-      };
+      const basicInfo = createBasicInfoFromCase(caseToEdit);
       
       setCaseBasicInfo(basicInfo);
       setAiGeneratedData(caseToEdit);
@@ -353,16 +221,13 @@ function App() {
       setMockCases(prev => prev.filter(c => c.id !== caseId));
       
       // Remove from favorites if exists
-      setFavorites(prev => {
-        const newFavorites = new Set(prev);
-        newFavorites.delete(caseId);
-        return newFavorites;
-      });
+      if (favorites.has(caseId)) {
+        toggleFavorite(caseId);
+      }
       
       // Close detail modal if this case was selected
       if (selectedCase?.id === caseId) {
-        setSelectedCase(null);
-        setSelectedCaseIndex(-1);
+        handleCaseDetailClose();
       }
     }
   };
@@ -371,16 +236,7 @@ function App() {
   const handleContinueCase = (caseId: string) => {
     const caseToResume = mockCases.find(c => c.id === caseId);
     if (caseToResume) {
-      // Create basic info from the case data
-      const basicInfo = {
-        companyName: caseToResume.companyName || '',
-        industry: caseToResume.industries || [caseToResume.industry],
-        mainIndustry: caseToResume.industry,
-        region: caseToResume.region,
-        prefecture: caseToResume.prefecture || '',
-        city: caseToResume.city || '',
-        companySize: caseToResume.companySize
-      };
+      const basicInfo = createBasicInfoFromCase(caseToResume);
       
       // Create initial messages based on current case content
       const initialMessages = [
@@ -525,7 +381,7 @@ function App() {
                 loading={loading}
                 onCaseSelect={handleCaseSelect}
                 favorites={favorites}
-                onToggleFavorite={handleToggleFavorite}
+                onToggleFavorite={toggleFavorite}
                 showFavorite={true}
               />
             </div>
