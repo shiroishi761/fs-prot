@@ -107,9 +107,14 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header - Fixed */}
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between rounded-t-lg">
-          <h1 className="text-lg font-semibold text-gray-900 pr-4">
-            {caseData.title}
-          </h1>
+          <div className="pr-4">
+            <h1 className="text-lg font-semibold text-gray-900">
+              {caseData.title}
+            </h1>
+            {caseData.companyName && (
+              <p className="text-sm text-gray-600 mt-1">{caseData.companyName}</p>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"

@@ -4,6 +4,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-001',
     title: '大型マンション建設プロジェクトの工期を20%短縮',
+    companyName: '東京都市建設株式会社',
     industry: '建設業',
     region: '関東',
     prefecture: '東京都',
@@ -39,6 +40,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-002',
     title: '地方建設会社の若手人材定着率を40%改善',
+    companyName: '東北建設株式会社',
     industry: '建設業',
     region: '東北',
     prefecture: '宮城県',
@@ -70,6 +72,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-003',
     title: '公共工事の安全管理をIoTで革新',
+    companyName: '中部土木工業株式会社',
     industry: '土木業',
     region: '中部',
     prefecture: '愛知県',
@@ -107,6 +110,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-004',
     title: '中小電気工事会社のペーパーレス化で業務効率50%向上',
+    companyName: '関西電気工事株式会社',
     industry: '電気工事業',
     region: '近畿',
     prefecture: '大阪府',
@@ -135,6 +139,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-005',
     title: 'BIM活用で大型商業施設の設計変更を75%削減',
+    companyName: '横浜総合建設株式会社',
     industry: '建設業',
     region: '関東',
     prefecture: '神奈川県',
@@ -174,6 +179,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-006',
     title: '解体工事の廃材管理をAIで最適化',
+    companyName: '中国解体工業株式会社',
     industry: '解体工事業',
     region: '中国',
     prefecture: '広島県',
@@ -196,6 +202,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-007',
     title: '地方の内装工事会社がリモートワークで営業エリア拡大',
+    companyName: '四国インテリア工業株式会社',
     industry: '内装工事業',
     region: '四国',
     prefecture: '香川県',
@@ -234,6 +241,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-008',
     title: '管工事会社の緊急対応をスマート化',
+    companyName: '九州管工株式会社',
     industry: '管工事業',
     region: '九州・沖縄',
     prefecture: '福岡県',
@@ -262,6 +270,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-009',
     title: '造園業のドローン活用で作業効率3倍に',
+    companyName: 'グリーンテック造園株式会社',
     industry: '造園業',
     region: '関東',
     prefecture: '埼玉県',
@@ -296,6 +305,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-010',
     title: '塗装工事の品質管理をデジタル化',
+    companyName: '静岡総合塗装株式会社',
     industry: '塗装工事業',
     region: '中部',
     prefecture: '静岡県',
@@ -324,6 +334,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-011',
     title: '防水工事の施工記録をブロックチェーンで保証',
+    companyName: '京都防水工業株式会社',
     industry: '防水工事業',
     region: '近畿',
     prefecture: '京都府',
@@ -362,6 +373,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-012',
     title: '土木工事の測量作業を自動化',
+    companyName: '北海道土木建設株式会社',
     industry: '土木業',
     region: '北海道',
     prefecture: '北海道',
@@ -390,6 +402,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-013',
     title: '専門工事業の多能工化を支援',
+    companyName: '青森総合工業株式会社',
     industry: 'その他専門工事業',
     region: '東北',
     prefecture: '青森県',
@@ -428,6 +441,7 @@ export const mockCases: Case[] = [
   {
     id: 'case-014',
     title: '建設現場の熱中症対策をAIで予防',
+    companyName: '沖縄海洋建設株式会社',
     industry: '建設業',
     region: '九州・沖縄',
     prefecture: '沖縄県',

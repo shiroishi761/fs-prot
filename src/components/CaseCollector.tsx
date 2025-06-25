@@ -31,9 +31,10 @@ interface CaseCollectorProps {
   basicInfo?: CaseBasicInfo; // 基本情報
   savedMessages?: Message[]; // 保存された会話履歴
   savedConversationHistory?: ConversationHistory[]; // 保存された会話履歴
+  existingCaseData?: Partial<Case>; // 既存事例データ（ヒヤリング再開時）
 }
 
-export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, onReviewEdit, onClose, basicInfo, savedMessages, savedConversationHistory }) => {
+export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, onReviewEdit, onClose, basicInfo, savedMessages, savedConversationHistory, existingCaseData }) => {
   // 基本情報に基づいて初期メッセージを生成
   const getInitialMessage = () => {
     if (basicInfo) {
@@ -280,6 +281,7 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                 // 基本的な事例データを生成
                 const basicCaseData = {
                   title: `${basicInfo?.companyName || ''}との商談`,
+                  companyName: basicInfo?.companyName || '',
                   industry: basicInfo?.mainIndustry || '',
                   industries: basicInfo?.industry || [],
                   region: basicInfo?.region || '',
@@ -287,12 +289,15 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   city: basicInfo?.city || '',
                   companySize: basicInfo?.companySize || 'medium',
                   challenges: ['商談内容を整理中'],
+                  challengeSummaries: ['商談内容整理中'],
                   needs: ['ニーズを整理中'],
                   proposals: ['提案内容を整理中'],
+                  results: [],
+                  tags: ['進行中'],
                   orderStatus: 'in_progress' as const
                 };
                 
-                onReviewEdit(basicCaseData, messages, conversationHistory);
+                onCaseCollected(basicCaseData);
               }}
               disabled={isLoading || isCompleted}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
@@ -306,7 +311,9 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                 if (conversationHistory.length >= 3) {
                   // 十分な会話がある場合はAI生成を試行（実際のAI呼び出しは省略してダミーデータ）
                   caseData = {
+                    id: existingCaseData?.id, // 既存事例のIDを保持
                     title: `${basicInfo?.companyName || ''}との商談事例`,
+                    companyName: basicInfo?.companyName || '',
                     industry: basicInfo?.mainIndustry || '',
                     industries: basicInfo?.industry || [],
                     region: basicInfo?.region || '',
@@ -317,12 +324,16 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                     challengeSummaries: ['収益性向上', '業務効率化'],
                     needs: ['コスト削減の実現', '作業時間の短縮'],
                     proposals: ['システム導入による自動化', 'プロセス改善提案'],
-                    orderStatus: 'in_progress' as const
+                    results: [],
+                    tags: ['進行中']
+                    // orderStatus will be determined in final confirmation screen
                   };
                 } else {
                   // 基本的な事例データを生成
                   caseData = {
+                    id: existingCaseData?.id, // 既存事例のIDを保持
                     title: `${basicInfo?.companyName || ''}との商談`,
+                    companyName: basicInfo?.companyName || '',
                     industry: basicInfo?.mainIndustry || '',
                     industries: basicInfo?.industry || [],
                     region: basicInfo?.region || '',
@@ -333,7 +344,9 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                     challengeSummaries: ['商談内容整理中'],
                     needs: ['ニーズを整理中'],
                     proposals: ['提案内容を整理中'],
-                    orderStatus: 'in_progress' as const
+                    results: [],
+                    tags: ['進行中']
+                    // orderStatus will be determined in final confirmation screen
                   };
                 }
                 

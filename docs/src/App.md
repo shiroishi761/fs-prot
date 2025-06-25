@@ -14,19 +14,28 @@
 - `./components/SearchBox` - 検索インターフェース
 - `./components/CaseList` - 事例一覧表示
 - `./components/CaseDetail` - 事例詳細モーダル
-- `./components/CaseCollector` - 新規事例登録モーダル
+- `./components/CaseAddForm` - 企業基本情報入力フォーム
+- `./components/CaseCollector` - AI事例収集チャットインターフェース
+- `./components/CaseReviewEdit` - AI生成事例の確認・編集フォーム
+- `./components/SearchConditionTags` - 検索条件タグ表示
 - `./utils/search` - 検索処理
 - `./data/mockCases` - 初期データ
 - `./types/case` - 型定義
 
 ## 状態管理
 ```typescript
+- currentView: ViewMode - 現在のビューモード ('search' | 'list' | 'add')
 - filters: SearchFilters - 現在の検索条件
 - searchResults: SearchResult[] - 検索結果
 - loading: boolean - 検索処理中フラグ  
 - selectedCase: Case | null - 選択中の事例
 - hasSearched: boolean - 検索実行済みフラグ
-- showCaseCollector: boolean - 新規登録モーダル表示フラグ
+- showCaseCollector: boolean - AIチャット画面表示フラグ
+- showCaseReviewEdit: boolean - 確認・編集画面表示フラグ
+- caseBasicInfo: CaseBasicInfo | null - 企業基本情報
+- aiGeneratedData: Partial<Case> | null - AI生成データ
+- chatMessages: Message[] - チャット会話履歴
+- chatConversationHistory: ConversationHistory[] - AI用会話履歴
 - mockCases: Case[] - 事例データ（動的更新可能）
 - favorites: Set<string> - お気に入り事例ID集合
 ```

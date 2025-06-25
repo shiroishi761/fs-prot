@@ -304,6 +304,20 @@ function applyFilters(cases: Case[], filters: SearchFilters, favoritesSet?: Set<
     filteredCases = filteredCases.filter(c => favoritesSet.has(c.id));
   }
   
+  // 公開ステータスでフィルター
+  if (filters.publicationStatus) {
+    filteredCases = filteredCases.filter(c => {
+      if (filters.publicationStatus === 'published') {
+        // 受注・失注は公開済み
+        return c.orderStatus === 'won' || c.orderStatus === 'lost';
+      } else if (filters.publicationStatus === 'unpublished') {
+        // 進行中は非公開
+        return c.orderStatus === 'in_progress';
+      }
+      return true;
+    });
+  }
+  
   return filteredCases;
 }
 
@@ -318,7 +332,7 @@ export function searchCases(
   // フィルターを適用
   let filteredCases = applyFilters(cases, filters, favoritesSet);
   
-  // クエリがない場合は、フィルター結果を返す
+  // クエリがない場合は、フィルター結果を最新順で返す
   if (!filters.query || filters.query.trim() === '') {
     return filteredCases
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -371,8 +385,13 @@ export function searchCases(
     }
   }
   
-  // スコアの高い順にソート
-  results.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  // スコアの高い順にソート、同じスコアの場合は最新順
+  results.sort((a, b) => {
+    if (b.relevanceScore !== a.relevanceScore) {
+      return b.relevanceScore - a.relevanceScore;
+    }
+    return b.case.createdAt.getTime() - a.case.createdAt.getTime();
+  });
   
   return results;
 }

@@ -610,6 +610,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({
               </div>
             )}
           </div>
+
         </div>
 
         {/* Tags Section */}

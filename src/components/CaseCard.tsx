@@ -4,11 +4,17 @@ import { SearchResult } from '../types/case';
 interface CaseCardProps {
   searchResult: SearchResult;
   onClick: () => void;
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  showFavorite?: boolean;
+  showTags?: boolean;
+  showActions?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onContinue?: () => void;
 }
 
-const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, onToggleFavorite }) => {
+const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, onToggleFavorite, showFavorite = true, showTags = true, showActions = false, onEdit, onDelete, onContinue }) => {
   const { case: caseData, relevanceScore, matchedFields, highlights } = searchResult;
 
   // Get company size label
@@ -68,32 +74,34 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
         
         <div className="flex items-center space-x-2">
           {/* Favorite button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite();
-            }}
-            className={`p-1 rounded-full transition-colors ${
-              isFavorite
-                ? 'text-red-500 hover:text-red-600'
-                : 'text-gray-400 hover:text-red-500'
-            }`}
-            title={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
-          >
-            <svg 
-              className="w-5 h-5" 
-              fill={isFavorite ? 'currentColor' : 'none'} 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
+          {showFavorite && onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              className={`p-1 rounded-full transition-colors ${
+                isFavorite
+                  ? 'text-red-500 hover:text-red-600'
+                  : 'text-gray-400 hover:text-red-500'
+              }`}
+              title={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-              />
-            </svg>
-          </button>
+              <svg 
+                className="w-5 h-5" 
+                fill={isFavorite ? 'currentColor' : 'none'} 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                />
+              </svg>
+            </button>
+          )}
 
           {/* Relevance score */}
           {relevanceScore < 1.0 && (
@@ -103,6 +111,13 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
           )}
         </div>
       </div>
+
+      {/* Company Name */}
+      {caseData.companyName && (
+        <div className="mb-2">
+          <span className="text-sm font-medium text-gray-700">{caseData.companyName}</span>
+        </div>
+      )}
 
       {/* Meta information - Line 1: Location */}
       <div className="flex items-center mb-2 text-xs text-gray-600">
@@ -116,7 +131,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
       </div>
 
       {/* Meta information - Line 2: Industry and Company Size */}
-      <div className="flex flex-wrap items-center gap-3 mb-2 text-xs text-gray-600">
+      <div className="flex flex-wrap items-center gap-4 mb-3 text-xs text-gray-600">
         <div className="flex items-center">
           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -132,53 +147,41 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
         </div>
       </div>
 
-      {/* Challenge snippet - Line 3 */}
-      <div className="mb-2">
-        <h4 className="text-xs font-medium text-gray-700 mb-1">課題</h4>
-        <p className="text-gray-600 text-xs leading-tight">
-          {(() => {
-            // 新しいデータ構造（challenges[]）を優先、フォールバックで古い構造（challenge）を使用
-            const challengeText = caseData.challenges?.length 
-              ? caseData.challenges[0] 
-              : caseData.challenge || '';
-              
-            return matchedFields.includes('challenge') ? (
-              <span dangerouslySetInnerHTML={{ 
-                __html: truncateText(highlightText(challengeText, 'challenge')) 
-              }} />
-            ) : (
-              truncateText(challengeText)
-            );
-          })()}
-        </p>
-      </div>
 
       {/* Course types and creation date */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex flex-wrap gap-1">
-          {caseData.tags.slice(0, 4).map((tag, index) => (
-            <span
-              key={index}
-              className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                matchedFields.includes('tags') 
-                  ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-200' 
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
-          {caseData.tags.length > 4 && (
-            <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-              +{caseData.tags.length - 4}
-            </span>
-          )}
+      {showTags ? (
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap gap-1">
+            {caseData.tags.slice(0, 4).map((tag, index) => (
+              <span
+                key={index}
+                className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                  matchedFields.includes('tags') 
+                    ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-200' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                {tag}
+              </span>
+            ))}
+            {caseData.tags.length > 4 && (
+              <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                +{caseData.tags.length - 4}
+              </span>
+            )}
+          </div>
+          
+          <div className="text-xs text-gray-500 ml-2">
+            {caseData.createdAt.toLocaleDateString('ja-JP')}
+          </div>
         </div>
-        
-        <div className="text-xs text-gray-500 ml-2">
-          {caseData.createdAt.toLocaleDateString('ja-JP')}
+      ) : (
+        <div className="flex justify-end mb-2">
+          <div className="text-xs text-gray-500">
+            {caseData.createdAt.toLocaleDateString('ja-JP')}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Matched fields indicator */}
       {matchedFields.length > 0 && (
@@ -188,6 +191,51 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             マッチ: {matchedFields.join(', ')}
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons for my cases */}
+      {showActions && onEdit && onDelete && (
+        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+          {/* Continue button for in-progress cases */}
+          {caseData.orderStatus === 'in_progress' && onContinue ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onContinue();
+              }}
+              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              title="AIヒヤリングを続きから開始"
+            >
+              ヒヤリング再開
+            </button>
+          ) : (
+            <div></div>
+          )}
+          
+          {/* Edit and Delete buttons */}
+          <div className="flex space-x-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="px-3 py-1 text-xs font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
+              title="事例を編集"
+            >
+              編集
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="px-3 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+              title="事例を削除"
+            >
+              削除
+            </button>
           </div>
         </div>
       )}

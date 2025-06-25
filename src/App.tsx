@@ -10,6 +10,7 @@ import { CaseAddForm } from './components/CaseAddForm';
 import { CaseReviewEdit } from './components/CaseReviewEdit';
 import Login from './components/Login';
 import SearchConditionTags from './components/SearchConditionTags';
+import MyPageFilter from './components/MyPageFilter';
 import './App.css';
 
 type ViewMode = 'search' | 'list' | 'add';
@@ -33,6 +34,7 @@ function App() {
   console.log('Basic info:', caseBasicInfo); // デバッグ用
   const [mockCases, setMockCases] = useState<Case[]>(initialMockCases);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [myPageFilters, setMyPageFilters] = useState<SearchFilters>({});
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -46,7 +48,6 @@ function App() {
       }
     }
   }, []);
-
 
   // Save favorites to localStorage
   useEffect(() => {
@@ -176,6 +177,15 @@ function App() {
     
     setMockCases(prev => [newCaseWithId, ...prev]);
     
+    // Close chat and go to My Cases page
+    setShowCaseCollector(false);
+    setCurrentView('list');
+    
+    // Clear chat state
+    setChatMessages([]);
+    setChatConversationHistory([]);
+    setCaseBasicInfo(null);
+    
     // Re-run search to include new case
     const results = searchCases([newCaseWithId, ...mockCases], filters, favorites);
     setSearchResults(results);
@@ -193,7 +203,6 @@ function App() {
       return newFavorites;
     });
   };
-
 
   // Handle login
   const handleLogin = () => {
@@ -229,35 +238,164 @@ function App() {
 
   // Handle back to chat from review/edit screen
   const handleBackToChat = () => {
-    setShowCaseReviewEdit(false);
-    setShowCaseCollector(true);
+    // If we're editing an existing case (not from chat), go back to My Cases
+    if (aiGeneratedData?.id && !showCaseCollector) {
+      setShowCaseReviewEdit(false);
+      setCurrentView('list');
+      setAiGeneratedData(null);
+      setCaseBasicInfo(null);
+    } else {
+      // Otherwise, go back to chat
+      setShowCaseReviewEdit(false);
+      setShowCaseCollector(true);
+    }
   };
 
   // Handle save from review/edit screen
   const handleSave = (caseData: Partial<Case>) => {
-    const newCaseWithId: Case = {
-      ...caseData,
-      id: `case-${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      title: caseData.title || '',
-      industry: caseData.industry || '',
-      region: caseData.region || '',
-      challenges: caseData.challenges || [],
-      needs: caseData.needs || [],
-      proposals: caseData.proposals || [],
-      results: caseData.results || [],
-      tags: [],
-      orderStatus: 'in_progress'
-    } as Case;
+    // Check if we're editing an existing case
+    const existingCase = aiGeneratedData?.id ? mockCases.find(c => c.id === aiGeneratedData.id) : null;
     
-    setMockCases(prev => [newCaseWithId, ...prev]);
+    if (existingCase) {
+      // Update existing case
+      const updatedCase: Case = {
+        ...existingCase,
+        ...caseData,
+        updatedAt: new Date(),
+        title: caseData.title || existingCase.title,
+        industry: caseData.industry || existingCase.industry,
+        region: caseData.region || existingCase.region,
+        challenges: caseData.challenges || existingCase.challenges || [],
+        needs: caseData.needs || existingCase.needs || [],
+        proposals: caseData.proposals || existingCase.proposals || [],
+        results: caseData.results || existingCase.results || [],
+        // Update orderStatus and tags based on the selected status
+        orderStatus: caseData.orderStatus || existingCase.orderStatus,
+        tags: caseData.orderStatus === 'won' ? ['受注'] : caseData.orderStatus === 'lost' ? ['失注'] : existingCase.tags || ['進行中']
+      };
+      
+      setMockCases(prev => prev.map(c => c.id === existingCase.id ? updatedCase : c));
+    } else {
+      // Create new case
+      const newCaseWithId: Case = {
+        ...caseData,
+        id: `case-${Date.now()}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        title: caseData.title || '',
+        industry: caseData.industry || '',
+        region: caseData.region || '',
+        challenges: caseData.challenges || [],
+        needs: caseData.needs || [],
+        proposals: caseData.proposals || [],
+        results: caseData.results || [],
+        tags: caseData.orderStatus === 'won' ? ['受注'] : caseData.orderStatus === 'lost' ? ['失注'] : ['進行中'],
+        orderStatus: caseData.orderStatus || 'in_progress'
+      } as Case;
+      
+      setMockCases(prev => [newCaseWithId, ...prev]);
+    }
+    
     setShowCaseReviewEdit(false);
+    
+    // Always go to search page to show the added case in the main list
     setCurrentView('search');
     
-    // Re-run search to include new case
-    const results = searchCases([newCaseWithId, ...mockCases], filters, favorites);
-    setSearchResults(results);
+    // Clear edit state
+    setAiGeneratedData(null);
+    setCaseBasicInfo(null);
+    
+    // If we were editing an existing case and changed orderStatus, reset MyPage filters
+    if (existingCase && existingCase.orderStatus === 'in_progress' && caseData.orderStatus !== 'in_progress') {
+      setMyPageFilters({});
+    }
+    
+    // Re-run search to include updated cases (using the updated mockCases state)
+    setTimeout(() => {
+      const results = searchCases(mockCases, filters, favorites);
+      setSearchResults(results);
+    }, 100);
+  };
+
+  // Handle edit case
+  const handleEditCase = (caseId: string) => {
+    const caseToEdit = mockCases.find(c => c.id === caseId);
+    if (caseToEdit) {
+      // Create basic info from the case data
+      const basicInfo = {
+        companyName: caseToEdit.companyName || '',
+        industry: caseToEdit.industries || [caseToEdit.industry],
+        mainIndustry: caseToEdit.industry,
+        region: caseToEdit.region,
+        prefecture: caseToEdit.prefecture || '',
+        city: caseToEdit.city || '',
+        companySize: caseToEdit.companySize
+      };
+      
+      setCaseBasicInfo(basicInfo);
+      setAiGeneratedData(caseToEdit);
+      setShowCaseReviewEdit(true);
+    }
+  };
+
+  // Handle delete case
+  const handleDeleteCase = (caseId: string) => {
+    if (window.confirm('この事例を削除してもよろしいですか？')) {
+      setMockCases(prev => prev.filter(c => c.id !== caseId));
+      
+      // Remove from favorites if exists
+      setFavorites(prev => {
+        const newFavorites = new Set(prev);
+        newFavorites.delete(caseId);
+        return newFavorites;
+      });
+      
+      // Close detail modal if this case was selected
+      if (selectedCase?.id === caseId) {
+        setSelectedCase(null);
+        setSelectedCaseIndex(-1);
+      }
+    }
+  };
+
+  // Handle continue case (resume AI interview)
+  const handleContinueCase = (caseId: string) => {
+    const caseToResume = mockCases.find(c => c.id === caseId);
+    if (caseToResume) {
+      // Create basic info from the case data
+      const basicInfo = {
+        companyName: caseToResume.companyName || '',
+        industry: caseToResume.industries || [caseToResume.industry],
+        mainIndustry: caseToResume.industry,
+        region: caseToResume.region,
+        prefecture: caseToResume.prefecture || '',
+        city: caseToResume.city || '',
+        companySize: caseToResume.companySize
+      };
+      
+      // Create initial messages based on current case content
+      const initialMessages = [
+        {
+          id: '1',
+          role: 'assistant' as const,
+          content: `こんにちは！${caseToResume.companyName}との商談の続きを行いましょう。
+
+現在の進捗状況：
+・課題: ${caseToResume.challenges?.[0] || '整理中'}
+・ニーズ: ${caseToResume.needs?.[0] || '整理中'}
+・提案: ${caseToResume.proposals?.[0] || '整理中'}
+
+さらに詳しい情報や追加の課題・提案などがあれば教えてください。`,
+          timestamp: new Date()
+        }
+      ];
+      
+      setCaseBasicInfo(basicInfo);
+      setAiGeneratedData(caseToResume); // Set the existing case data to ensure it's recognized as an edit
+      setChatMessages(initialMessages);
+      setChatConversationHistory([]);
+      setShowCaseCollector(true);
+    }
   };
 
   // Show login screen if not authenticated
@@ -316,7 +454,7 @@ function App() {
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
-              title={!sidebarOpen ? '事例一覧' : ''}
+              title={!sidebarOpen ? 'マイ事例' : ''}
             >
               <div className="w-5 h-5 mr-3 flex items-center justify-center">
                 📄
@@ -324,7 +462,7 @@ function App() {
               <span className={`transition-opacity duration-300 ${
                 sidebarOpen ? 'opacity-100' : 'opacity-0 sr-only'
               }`}>
-                事例一覧
+                マイ事例
               </span>
             </button>
             
@@ -379,6 +517,7 @@ function App() {
                 onCaseSelect={handleCaseSelect}
                 favorites={favorites}
                 onToggleFavorite={handleToggleFavorite}
+                showFavorite={true}
               />
             </div>
           </>
@@ -389,20 +528,24 @@ function App() {
             {/* List Section */}
             <div className="mb-4">
               <div className="mb-6 text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  事例一覧
-                </h2>
-                <p className="text-gray-600">
-                  登録されている全ての事例を表示します
-                </p>
               </div>
+
+              <MyPageFilter
+                filters={myPageFilters}
+                onFiltersChange={setMyPageFilters}
+              />
               
               <CaseList
-                searchResults={searchCases(mockCases, {}, favorites)}
+                searchResults={searchCases(mockCases, myPageFilters, new Set())}
                 loading={false}
                 onCaseSelect={handleCaseSelect}
-                favorites={favorites}
-                onToggleFavorite={handleToggleFavorite}
+                showFavorite={false}
+                showTags={false}
+                itemsPerPage={9}
+                showActions={true}
+                onEdit={handleEditCase}
+                onDelete={handleDeleteCase}
+                onContinue={handleContinueCase}
               />
             </div>
           </>
@@ -426,6 +569,7 @@ function App() {
             basicInfo={caseBasicInfo}
             savedMessages={chatMessages}
             savedConversationHistory={chatConversationHistory}
+            existingCaseData={aiGeneratedData || undefined}
           />
         )}
 

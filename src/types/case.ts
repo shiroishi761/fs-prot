@@ -2,6 +2,7 @@
 export interface Case {
   id: string;
   title: string;
+  companyName?: string; // 会社名
   industry: string;
   industries?: string[]; // 複数業種対応
   region: string;
@@ -51,6 +52,7 @@ export interface SearchFilters {
   dateFrom?: Date;
   dateTo?: Date;
   favorites?: boolean; // お気に入りのみ表示
+  publicationStatus?: 'published' | 'unpublished'; // 公開済み・非公開フィルター
   // 後方互換性のため残しておく（段階的移行用）
   industry?: string;
   region?: string;

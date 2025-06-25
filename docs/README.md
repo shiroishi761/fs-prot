@@ -8,11 +8,14 @@ AI駆動開発のためのファイル構造と実装詳細を記載。
 
 ### Components
 - [`App.md`](./src/App.md) - メインアプリケーションコンポーネント
-- [`CaseCollector.md`](./src/components/CaseCollector.md) - AI事例収集モーダル  
+- [`CaseAddForm.md`](./src/components/CaseAddForm.md) - 企業基本情報入力フォーム
+- [`CaseCollector.md`](./src/components/CaseCollector.md) - AI事例収集チャットインターフェース  
+- [`CaseReviewEdit.md`](./src/components/CaseReviewEdit.md) - AI生成事例の確認・編集フォーム
 - [`CaseList.md`](./src/components/CaseList.md) - 事例一覧表示
 - [`CaseCard.md`](./src/components/CaseCard.md) - 個別事例カード表示
 - [`CaseDetail.md`](./src/components/CaseDetail.md) - 事例詳細モーダル
 - [`SearchBox.md`](./src/components/SearchBox.md) - 検索インターフェース
+- [`SearchConditionTags.md`](./src/components/SearchConditionTags.md) - 検索条件タグ表示
 - [`ReflectionAssistant.md`](./src/components/ReflectionAssistant.md) - 商談振り返り支援モーダル
 - [`PreMeetingAdvisor.md`](./src/components/PreMeetingAdvisor.md) - 商談前アドバイス機能
 
@@ -78,12 +81,35 @@ App (状態管理) → CaseList (Props転送) → CaseCard (機能実装)
 - **React Scripts 5.0.1** - ビルドツール
 - **Firebase Hosting** - デプロイ環境
 
+## AI事例作成ワークフロー
+
+システムの中核機能である3段階の事例作成プロセス：
+
+### 1. 基本情報入力 (CaseAddForm)
+- 企業名、業種、地域、規模の入力
+- 複数業種選択とメイン業種の指定
+- 地域階層選択（地方→都道府県→市区町村）
+- バリデーション機能
+
+### 2. AIヒヤリング (CaseCollector)  
+- 基本情報に基づく個別初期メッセージ
+- Gemini APIとの対話による詳細情報収集
+- 会話履歴管理と状態永続化
+- 一時保存と確認機能
+
+### 3. 確認・編集 (CaseReviewEdit)
+- AI生成データの表示・編集
+- 課題・ニーズ・提案セットの動的管理
+- 基本情報との統合
+- 最終保存処理
+
 ## 重要な設計方針
 
 ### 状態管理
 - React hooksベースの軽量な状態管理
 - コンポーネント間のprops受け渡し
 - 必要最小限のstate設計
+- 会話履歴の永続化対応
 
 ### API統合
 - Gemini Chat APIの適切な活用
@@ -91,7 +117,8 @@ App (状態管理) → CaseList (Props転送) → CaseCard (機能実装)
 - レスポンスタイムアウト対応
 
 ### UX設計
-- モーダルベースの操作フロー
+- 3段階ワークフローによる段階的情報収集
+- 会話履歴保持によるシームレスな画面遷移
 - リアルタイムフィードバック
 - アクセシビリティ対応
 

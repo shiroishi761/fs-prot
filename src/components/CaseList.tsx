@@ -6,8 +6,16 @@ interface CaseListProps {
   searchResults: SearchResult[];
   loading: boolean;
   onCaseSelect: (caseId: string) => void;
-  favorites: Set<string>;
-  onToggleFavorite: (caseId: string) => void;
+  favorites?: Set<string>;
+  onToggleFavorite?: (caseId: string) => void;
+  showFavorite?: boolean;
+  showTags?: boolean;
+  columns?: 'single' | 'grid';
+  itemsPerPage?: number;
+  showActions?: boolean;
+  onEdit?: (caseId: string) => void;
+  onDelete?: (caseId: string) => void;
+  onContinue?: (caseId: string) => void;
 }
 
 const CaseList: React.FC<CaseListProps> = ({ 
@@ -15,11 +23,18 @@ const CaseList: React.FC<CaseListProps> = ({
   loading, 
   onCaseSelect,
   favorites,
-  onToggleFavorite
+  onToggleFavorite,
+  showFavorite = true,
+  showTags = true,
+  columns = 'grid',
+  itemsPerPage = 6,
+  showActions = false,
+  onEdit,
+  onDelete,
+  onContinue
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('desc');
-  const itemsPerPage = 6;
 
   const handleDateSort = () => {
     if (sortOrder === 'desc') {
@@ -145,14 +160,24 @@ const CaseList: React.FC<CaseListProps> = ({
       </div>
 
       {/* Results grid */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className={`grid gap-4 ${
+        columns === 'single' 
+          ? 'grid-cols-1' 
+          : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+      }`}>
         {currentResults.map((result) => (
           <CaseCard
             key={result.case.id}
             searchResult={result}
             onClick={() => onCaseSelect(result.case.id)}
-            isFavorite={favorites.has(result.case.id)}
-            onToggleFavorite={() => onToggleFavorite(result.case.id)}
+            isFavorite={favorites?.has(result.case.id) || false}
+            onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result.case.id) : undefined}
+            showFavorite={showFavorite}
+            showTags={showTags}
+            showActions={showActions}
+            onEdit={onEdit ? () => onEdit(result.case.id) : undefined}
+            onDelete={onDelete ? () => onDelete(result.case.id) : undefined}
+            onContinue={onContinue ? () => onContinue(result.case.id) : undefined}
           />
         ))}
       </div>

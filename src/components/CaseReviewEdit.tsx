@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Case } from '../types/case';
+import { Case, INDUSTRIES, REGIONS, AREA_HIERARCHY } from '../types/case';
 
 interface CaseBasicInfo {
   companyName: string;
@@ -31,14 +31,29 @@ export const CaseReviewEdit: React.FC<CaseReviewEditProps> = ({
     aiGeneratedData.proposals?.length || 1
   );
 
-  const [editedData, setEditedData] = useState<Partial<Case>>({
-    title: aiGeneratedData.title || '',
-    challenges: aiGeneratedData.challenges || Array(maxSets).fill(''),
-    challengeSummaries: aiGeneratedData.challengeSummaries || Array(maxSets).fill(''),
-    needs: aiGeneratedData.needs || Array(maxSets).fill(''),
-    proposals: aiGeneratedData.proposals || Array(maxSets).fill(''),
-    results: aiGeneratedData.results || [''],
-    ...aiGeneratedData
+  const [editedData, setEditedData] = useState<Partial<Case>>(() => {
+    const defaultData = {
+      orderStatus: 'won' as const, // Default to won (受注)
+      title: aiGeneratedData.title || '',
+      companyName: aiGeneratedData.companyName || basicInfo.companyName,
+      industry: aiGeneratedData.industry || basicInfo.mainIndustry,
+      region: aiGeneratedData.region || basicInfo.region,
+      prefecture: aiGeneratedData.prefecture || basicInfo.prefecture,
+      city: aiGeneratedData.city || basicInfo.city,
+      companySize: aiGeneratedData.companySize || basicInfo.companySize,
+      challenges: aiGeneratedData.challenges || Array(maxSets).fill(''),
+      challengeSummaries: aiGeneratedData.challengeSummaries || Array(maxSets).fill(''),
+      needs: aiGeneratedData.needs || Array(maxSets).fill(''),
+      proposals: aiGeneratedData.proposals || Array(maxSets).fill(''),
+      results: aiGeneratedData.results || ['']
+    };
+    
+    // Only override orderStatus if it's explicitly set in aiGeneratedData and is different from default
+    return {
+      ...defaultData,
+      ...aiGeneratedData,
+      orderStatus: aiGeneratedData.orderStatus || defaultData.orderStatus
+    };
   });
 
   const handleFieldChange = (field: keyof Case, value: any) => {
@@ -82,58 +97,127 @@ export const CaseReviewEdit: React.FC<CaseReviewEditProps> = ({
   const handleSave = () => {
     onSave({
       ...editedData,
-      // 基本情報を追加
-      industry: basicInfo.mainIndustry,
-      industries: basicInfo.industry,
-      region: basicInfo.region,
-      prefecture: basicInfo.prefecture,
-      city: basicInfo.city,
-      companySize: basicInfo.companySize,
-      orderStatus: 'in_progress'
+      // Use edited basic info
+      industry: editedData.industry || basicInfo.mainIndustry,
+      industries: editedData.industry ? [editedData.industry] : basicInfo.industry,
+      region: editedData.region || basicInfo.region,
+      prefecture: editedData.prefecture || basicInfo.prefecture,
+      city: editedData.city || basicInfo.city,
+      companySize: editedData.companySize || basicInfo.companySize,
+      companyName: editedData.companyName || basicInfo.companyName,
+      // Ensure orderStatus is saved correctly
+      orderStatus: editedData.orderStatus || 'won'
     });
   };
 
-  const getCompanySizeLabel = (size: string) => {
-    switch (size) {
-      case 'small': return '小規模（〜50名）';
-      case 'medium': return '中規模（50-300名）';
-      case 'large': return '大規模（300名〜）';
-      default: return size;
-    }
-  };
 
   const currentSets = Math.max(1, editedData.challenges?.length || 0);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
-        {/* 基本情報表示 */}
+        {/* 基本情報編集 */}
         <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">基本情報</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">企業名:</span>
-                <span className="ml-2">{basicInfo.companyName}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">メイン業種:</span>
-                <span className="ml-2">{basicInfo.mainIndustry}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">地域:</span>
-                <span className="ml-2">{basicInfo.prefecture} {basicInfo.city}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">規模:</span>
-                <span className="ml-2">{getCompanySizeLabel(basicInfo.companySize)}</span>
-              </div>
-              {basicInfo.industry.length > 1 && (
-                <div className="md:col-span-2">
-                  <span className="font-medium text-gray-700">その他業種:</span>
-                  <span className="ml-2">{basicInfo.industry.filter(i => i !== basicInfo.mainIndustry).join('、')}</span>
-                </div>
-              )}
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">基本情報</h2>
+          
+          {/* 一段目：企業名、業種、企業規模 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 企業名 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">企業名</label>
+              <input
+                type="text"
+                value={editedData.companyName || ''}
+                onChange={(e) => handleFieldChange('companyName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="企業名を入力してください"
+              />
+            </div>
+
+            {/* 業種 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">業種</label>
+              <select
+                value={editedData.industry || ''}
+                onChange={(e) => handleFieldChange('industry', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">業種を選択してください</option>
+                {INDUSTRIES.map(industry => (
+                  <option key={industry} value={industry}>{industry}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 企業規模 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">企業規模</label>
+              <select
+                value={editedData.companySize || 'medium'}
+                onChange={(e) => handleFieldChange('companySize', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="small">小規模（〜50名）</option>
+                <option value="medium">中規模（50-300名）</option>
+                <option value="large">大規模（300名〜）</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 二段目：地域、都道府県、市区町村 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 地域 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">地域</label>
+              <select
+                value={editedData.region || ''}
+                onChange={(e) => {
+                  handleFieldChange('region', e.target.value);
+                  // 地域が変更されたら都道府県と市区町村をリセット
+                  handleFieldChange('prefecture', '');
+                  handleFieldChange('city', '');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">地域を選択してください</option>
+                {REGIONS.map(region => (
+                  <option key={region} value={region}>{region}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 都道府県 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">都道府県</label>
+              <select
+                value={editedData.prefecture || ''}
+                onChange={(e) => {
+                  handleFieldChange('prefecture', e.target.value);
+                  // 都道府県が変更されたら市区町村をリセット
+                  handleFieldChange('city', '');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!editedData.region}
+              >
+                <option value="">都道府県を選択してください</option>
+                {editedData.region && AREA_HIERARCHY[editedData.region as keyof typeof AREA_HIERARCHY] && 
+                  Object.keys(AREA_HIERARCHY[editedData.region as keyof typeof AREA_HIERARCHY]).map(prefecture => (
+                    <option key={prefecture} value={prefecture}>{prefecture}</option>
+                  ))
+                }
+              </select>
+            </div>
+
+            {/* 市区町村 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">市区町村</label>
+              <input
+                type="text"
+                value={editedData.city || ''}
+                onChange={(e) => handleFieldChange('city', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="市区町村を入力してください"
+              />
             </div>
           </div>
         </div>
@@ -151,6 +235,37 @@ export const CaseReviewEdit: React.FC<CaseReviewEditProps> = ({
               required
             />
           </div>
+
+          {/* 商談結果（進行中以外の場合のみ表示） */}
+          {aiGeneratedData.orderStatus !== 'in_progress' && (
+            <div>
+              <label className="block text-lg font-semibold text-gray-900 mb-3">商談結果</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="orderStatus"
+                    value="won"
+                    checked={editedData.orderStatus === 'won'}
+                    onChange={(e) => handleFieldChange('orderStatus', e.target.value)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">受注</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="orderStatus"
+                    value="lost"
+                    checked={editedData.orderStatus === 'lost'}
+                    onChange={(e) => handleFieldChange('orderStatus', e.target.value)}
+                    className="mr-2 text-red-600 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-gray-700">失注</span>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 課題・ニーズ・提案セット */}

@@ -21,7 +21,8 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
     filters.city ||
     filters.companySize ||
     (filters.tags && filters.tags.length > 0) ||
-    filters.favorites
+    filters.favorites ||
+    filters.publicationStatus
   );
 
   if (!hasActiveFilters) {
@@ -158,6 +159,25 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
             onClick={() => onRemoveFilter('favorites')}
             className="hover:bg-yellow-200 rounded-full p-0.5 transition-colors"
             title="お気に入りフィルターを削除"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Publication Status tag */}
+      {filters.publicationStatus && (
+        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full flex items-center gap-2">
+          <span>
+            {filters.publicationStatus === 'published' && '公開済み'}
+            {filters.publicationStatus === 'unpublished' && '非公開'}
+          </span>
+          <button
+            onClick={() => onRemoveFilter('publicationStatus')}
+            className="hover:bg-green-200 rounded-full p-0.5 transition-colors"
+            title="公開ステータスフィルターを削除"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

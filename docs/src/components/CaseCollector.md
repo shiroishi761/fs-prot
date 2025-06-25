@@ -1,16 +1,17 @@
 # CaseCollector Component
 
 ## 概要
-AIアシスタントとの会話を通じて営業事例を収集するモーダルコンポーネント。
-ユーザーが商談情報を入力すると、Gemini APIと連携してインタラクティブな質問応答を行い、
-最終的に構造化された事例データを生成・登録する。
+AI事例収集ワークフローの第二段階を担うチャットインターフェース。
+企業基本情報を受け取り、AIアシスタントとの会話を通じて商談の詳細情報を収集し、
+最終的に確認・編集画面に送るためのコンポーネント。
 
 ## 主要機能
-- モーダル形式の会話インターフェース
+- 基本情報に基づく初期メッセージ生成
 - Gemini APIとのリアルタイム対話
 - 会話履歴の管理（最大10件に制限）
-- 事例登録前のユーザー確認フロー
-- 送信後の入力フィールド自動クリア
+- 一時保存機能
+- 確認・編集画面への遷移機能
+- 会話履歴の永続化対応
 
 ## 依存関係
 - `../services/geminiService.ts` - AI会話エンジン
@@ -35,19 +36,43 @@ AIアシスタントとの会話を通じて営業事例を収集するモーダ
 
 ## Props
 ```typescript
+interface CaseBasicInfo {
+  companyName: string;
+  industry: string[];
+  mainIndustry: string;
+  region: string;
+  prefecture: string;
+  city: string;
+  companySize: 'small' | 'medium' | 'large';
+}
+
 interface CaseCollectorProps {
   onCaseCollected: (newCase: Omit<Case, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onReviewEdit: (aiData: Partial<Case>, messages: Message[], conversationHistory: ConversationHistory[]) => void;
   onClose: () => void;
+  basicInfo?: CaseBasicInfo;
+  savedMessages?: Message[];
+  savedConversationHistory?: ConversationHistory[];
 }
 ```
 
 ## 主要メソッド
+- `getInitialMessage()` - 基本情報に基づく初期メッセージ生成
 - `handleSend()` - メッセージ送信とAI応答処理
-- `handleConfirmSave()` - 事例登録確認時の処理
-- `handleDeclineSave()` - 事例登録拒否時の処理
 - `handleKeyDown()` - Enter キー送信対応
+
+## ワークフロー連携
+1. **前の段階**: CaseAddForm（基本情報入力）
+2. **現在の段階**: AIヒヤリング
+3. **次の段階**: CaseReviewEdit（確認・編集）
+
+## 会話履歴管理
+- **復帰時**: savedMessagesとsavedConversationHistoryで状態復元
+- **保存時**: 現在の会話状態を次の画面に引き継ぎ
+- **メモリ制限**: 最大10件の会話履歴を保持
 
 ## 注意点
 - Gemini API キーが必要（環境変数 REACT_APP_GEMINI_API_KEY）
-- 事例登録は必ずユーザー確認後に実行
+- 会話履歴の永続化により状態復帰が可能
 - エラー時も入力フィールドをクリア
+- 基本情報がない場合は汎用的な初期メッセージを表示
