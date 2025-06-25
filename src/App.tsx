@@ -54,9 +54,10 @@ function App() {
     localStorage.setItem('careeco-favorites', JSON.stringify(Array.from(favorites)));
   }, [favorites]);
 
-  // Initialize with all cases
+  // Initialize with all cases (published only for search page)
   useEffect(() => {
-    const initialResults = searchCases(mockCases, {}, favorites);
+    const searchFilters = { publicationStatus: 'published' as const };
+    const initialResults = searchCases(mockCases, searchFilters, favorites);
     setSearchResults(initialResults);
   }, [mockCases, favorites]);
 
@@ -68,7 +69,9 @@ function App() {
     // Simulate API delay for better UX
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const results = searchCases(mockCases, filters, favorites);
+    // Add publicationStatus filter for search page to show only published cases
+    const searchFilters = { ...filters, publicationStatus: 'published' as const };
+    const results = searchCases(mockCases, searchFilters, favorites);
     setSearchResults(results);
     setLoading(false);
   };
@@ -118,7 +121,9 @@ function App() {
     if (filtersChanged) {
       // Perform search automatically when non-query filters change
       setTimeout(() => {
-        const results = searchCases(mockCases, newFilters, favorites);
+        // Add publicationStatus filter for search page to show only published cases
+        const searchFilters = { ...newFilters, publicationStatus: 'published' as const };
+        const results = searchCases(mockCases, searchFilters, favorites);
         setSearchResults(results);
         setHasSearched(true);
       }, 100);
@@ -160,8 +165,9 @@ function App() {
     
     setFilters(newFilters);
     
-    // Perform search with updated filters
-    const results = searchCases(mockCases, newFilters, favorites);
+    // Perform search with updated filters (add publicationStatus for search page)
+    const searchFilters = { ...newFilters, publicationStatus: 'published' as const };
+    const results = searchCases(mockCases, searchFilters, favorites);
     setSearchResults(results);
     setHasSearched(true);
   };
@@ -186,8 +192,9 @@ function App() {
     setChatConversationHistory([]);
     setCaseBasicInfo(null);
     
-    // Re-run search to include new case
-    const results = searchCases([newCaseWithId, ...mockCases], filters, favorites);
+    // Re-run search to include new case (only published cases for search page)
+    const searchFilters = { ...filters, publicationStatus: 'published' as const };
+    const results = searchCases([newCaseWithId, ...mockCases], searchFilters, favorites);
     setSearchResults(results);
   };
 
@@ -255,6 +262,7 @@ function App() {
   const handleSave = (caseData: Partial<Case>) => {
     // Check if we're editing an existing case
     const existingCase = aiGeneratedData?.id ? mockCases.find(c => c.id === aiGeneratedData.id) : null;
+    let updatedCases: Case[];
     
     if (existingCase) {
       // Update existing case
@@ -274,7 +282,8 @@ function App() {
         tags: caseData.orderStatus === 'won' ? ['受注'] : caseData.orderStatus === 'lost' ? ['失注'] : existingCase.tags || ['進行中']
       };
       
-      setMockCases(prev => prev.map(c => c.id === existingCase.id ? updatedCase : c));
+      updatedCases = mockCases.map(c => c.id === existingCase.id ? updatedCase : c);
+      setMockCases(updatedCases);
     } else {
       // Create new case
       const newCaseWithId: Case = {
@@ -293,7 +302,8 @@ function App() {
         orderStatus: caseData.orderStatus || 'in_progress'
       } as Case;
       
-      setMockCases(prev => [newCaseWithId, ...prev]);
+      updatedCases = [newCaseWithId, ...mockCases];
+      setMockCases(updatedCases);
     }
     
     setShowCaseReviewEdit(false);
@@ -310,11 +320,10 @@ function App() {
       setMyPageFilters({});
     }
     
-    // Re-run search to include updated cases (using the updated mockCases state)
-    setTimeout(() => {
-      const results = searchCases(mockCases, filters, favorites);
-      setSearchResults(results);
-    }, 100);
+    // Re-run search to include updated cases (use the immediately updated cases, only published cases for search page)
+    const searchFilters = { ...filters, publicationStatus: 'published' as const };
+    const results = searchCases(updatedCases, searchFilters, favorites);
+    setSearchResults(results);
   };
 
   // Handle edit case
