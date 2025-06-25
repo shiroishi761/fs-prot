@@ -49,11 +49,6 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
     return 'text-red-600 bg-red-100';
   };
 
-  // Truncate text to specified length
-  const truncateText = (text: string, maxLength: number = 50) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
 
   return (
     <div

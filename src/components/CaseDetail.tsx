@@ -80,7 +80,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
     if (caseData) {
       setExpandedSections(new Set());
     }
-  }, [caseData?.id]);
+  }, [caseData]);
 
   // Handle keyboard navigation
   useEffect(() => {

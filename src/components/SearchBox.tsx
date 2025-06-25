@@ -19,7 +19,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>(filters.tags || []);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(filters.industries || (filters.industry ? [filters.industry] : []));
-  const [selectedRegions, setSelectedRegions] = useState<string[]>(filters.regions || (filters.region ? [filters.region] : []));
   const [selectedRegion, setSelectedRegion] = useState(filters.region || '');
   const [selectedPrefecture, setSelectedPrefecture] = useState(filters.prefecture || '');
   const [selectedCity, setSelectedCity] = useState(filters.city || '');
@@ -167,15 +166,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     handleFilterChange('industries', newSelectedIndustries.length > 0 ? newSelectedIndustries : undefined);
   };
 
-  // Handle region selection  
-  const handleRegionToggle = (region: string) => {
-    const newSelectedRegions = selectedRegions.includes(region)
-      ? selectedRegions.filter(r => r !== region)
-      : [...selectedRegions, region];
-    
-    setSelectedRegions(newSelectedRegions);
-    handleFilterChange('regions', newSelectedRegions.length > 0 ? newSelectedRegions : undefined);
-  };
 
   // Handle tag selection
   const handleTagToggle = (tag: string) => {
@@ -200,7 +190,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     setQuery('');
     setSelectedTags([]);
     setSelectedIndustries([]);
-    setSelectedRegions([]);
     setSelectedRegion('');
     setSelectedPrefecture('');
     setSelectedCity('');
@@ -230,7 +219,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     setQuery(filters.query || '');
     setSelectedTags(filters.tags || []);
     setSelectedIndustries(filters.industries || (filters.industry ? [filters.industry] : []));
-    setSelectedRegions(filters.regions || (filters.region ? [filters.region] : []));
     setSelectedRegion(filters.region || '');
     setSelectedPrefecture(filters.prefecture || '');
     setSelectedCity(filters.city || '');
