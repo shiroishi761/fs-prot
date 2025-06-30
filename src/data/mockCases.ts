@@ -460,5 +460,94 @@ export const mockCases: Case[] = [
     tags: ['人材不足解決', '失注'],
     createdAt: new Date('2024-12-20'),
     updatedAt: new Date('2024-12-20')
+  },
+  {
+    id: 'case-015',
+    title: 'vとの商談',
+    companyName: 'v',
+    industry: '建設業',
+    region: '東北',
+    prefecture: '秋田県',
+    city: 'v',
+    companySize: 'medium',
+    orderStatus: 'in_progress',
+    challenges: [
+      '商談内容を整理中'
+    ],
+    challengeSummaries: [
+      '商談内容整理中'
+    ],
+    needs: [
+      'ニーズを整理中'
+    ],
+    proposals: [
+      '提案内容を整理中'
+    ],
+    results: [],
+    tags: ['進行中'],
+    createdAt: new Date('2025-06-30'),
+    updatedAt: new Date('2025-06-30')
+  },
+  {
+    id: 'case-016',
+    title: '人材育成システムの導入検討',
+    companyName: '関東建設技術株式会社',
+    industry: '建設業',
+    region: '関東',
+    prefecture: '東京都',
+    city: '渋谷区',
+    companySize: 'large',
+    orderStatus: 'in_progress',
+    challenges: [
+      '新入社員の技術習得期間が長期化している',
+      'ベテラン技術者の技術継承が困難'
+    ],
+    challengeSummaries: [
+      '新入社員技術習得期間長期化',
+      'ベテラン技術継承困難'
+    ],
+    needs: [
+      '効率的な人材育成システムが必要',
+      '技術継承のデジタル化を実現したい'
+    ],
+    proposals: [
+      'VRを活用した技術訓練システムの導入',
+      'オンライン学習プラットフォームの構築'
+    ],
+    results: [],
+    tags: ['進行中', '人材育成'],
+    createdAt: new Date('2025-06-28'),
+    updatedAt: new Date('2025-06-30')
+  },
+  {
+    id: 'case-017',
+    title: '工事進捗管理の効率化',
+    companyName: '大阪工業株式会社',
+    industry: '土木業',
+    region: '近畿',
+    prefecture: '大阪府',
+    city: '大阪市',
+    companySize: 'medium',
+    orderStatus: 'in_progress',
+    challenges: [
+      '複数現場の進捗把握に時間がかかる',
+      '現場間の情報共有が不十分'
+    ],
+    challengeSummaries: [
+      '進捗把握時間過多',
+      '現場間情報共有不足'
+    ],
+    needs: [
+      'リアルタイム進捗管理システム',
+      '現場間連携強化'
+    ],
+    proposals: [
+      'IoTセンサーによる進捗自動監視',
+      'クラウド型情報共有システム'
+    ],
+    results: [],
+    tags: ['進行中', '効率化'],
+    createdAt: new Date('2025-06-25'),
+    updatedAt: new Date('2025-06-29')
   }
 ];

@@ -70,6 +70,8 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
   const [geminiService] = useState(() => new GeminiService());
   const [isCompleted, setIsCompleted] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [canTemporarySave, setCanTemporarySave] = useState(false);
+  const [aiDataReceived, setAiDataReceived] = useState<any[]>([]);
   
   // 保存された状態がある場合は完了状態をリセット
   React.useEffect(() => {
@@ -126,14 +128,22 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
         { role: 'user' as const, parts: currentInput }
       ].slice(-10); // 最新の10件のみ保持
 
-      // 事例登録の準備ができているかチェック
-      const readyToSave = geminiService.checkIfReadyToSave(updatedHistory);
-      
-      // Gemini APIを呼び出し
+      // Gemini APIを呼び出し（将来的にはFastAPI連携に変更）
       const result = await geminiService.continueConversation(
         conversationHistory,
         currentInput
       );
+      
+      // FastAPIからのレスポンス形式をシミュレート
+      // 実際にはfetch('/api/ai-interview', {...})を使用
+      const mockAiData = result.structuredCase ? [
+        {
+          title: `${basicInfo?.companyName}との商談事例`,
+          challenge: "課題が特定されました",
+          need: "ニーズが明確になりました", 
+          proposal: "提案が整理されました"
+        }
+      ] : null;
 
       // 会話履歴を更新
       setConversationHistory(prev => {
@@ -154,13 +164,16 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      // 事例登録準備ができている場合、情報を表示
-      if (readyToSave && !result.structuredCase) {
+      // AI生成データがある場合は保存ボタンを有効化
+      if (mockAiData && mockAiData.length > 0) {
+        setAiDataReceived(mockAiData);
+        setCanTemporarySave(true);
+        
         setTimeout(() => {
           const confirmMessage: Message = {
             id: (Date.now() + 2).toString(),
             role: 'assistant',
-            content: '十分な情報が集まりました。右下の「追加」ボタンから事例を追加できます。',
+            content: '事例情報が整理されました！保存ボタンから事例を保存できます。',
             timestamp: new Date()
           };
           setMessages(prev => [...prev, confirmMessage]);
@@ -275,11 +288,16 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
         </div>
 
         <div className="px-4 pb-4">
+          {!canTemporarySave && (
+            <div className="text-sm text-gray-500 mb-3 text-center">
+              💡 AIが課題やニーズを整理できたら、保存ボタンが有効になります
+            </div>
+          )}
           <div className="flex justify-end space-x-3">
             <button
               onClick={() => {
-                // 基本的な事例データを生成
-                const basicCaseData = {
+                // AI生成データを使用して事例データを生成
+                const caseData = {
                   title: `${basicInfo?.companyName || ''}との商談`,
                   companyName: basicInfo?.companyName || '',
                   industry: basicInfo?.mainIndustry || '',
@@ -288,72 +306,58 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   prefecture: basicInfo?.prefecture || '',
                   city: basicInfo?.city || '',
                   companySize: basicInfo?.companySize || 'medium',
-                  challenges: ['商談内容を整理中'],
-                  challengeSummaries: ['商談内容整理中'],
-                  needs: ['ニーズを整理中'],
-                  proposals: ['提案内容を整理中'],
+                  // AI生成データを使用
+                  challenges: aiDataReceived.map(item => item.challenge),
+                  challengeSummaries: aiDataReceived.map(item => item.title),
+                  needs: aiDataReceived.map(item => item.need),
+                  proposals: aiDataReceived.map(item => item.proposal),
                   results: [],
                   tags: ['進行中'],
                   orderStatus: 'in_progress' as const
                 };
                 
-                onCaseCollected(basicCaseData);
+                onCaseCollected(caseData);
               }}
-              disabled={isLoading || isCompleted}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={isLoading || isCompleted || !canTemporarySave}
+              className={`px-4 py-2 text-sm font-medium border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                canTemporarySave 
+                  ? 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+                  : 'text-gray-500 bg-gray-100 border-gray-300 cursor-not-allowed'
+              }`}
             >
               一時保存
             </button>
             <button
               onClick={() => {
-                // AI生成データがある場合はそれを使用、なければ基本データを生成
-                let caseData;
-                if (conversationHistory.length >= 3) {
-                  // 十分な会話がある場合はAI生成を試行（実際のAI呼び出しは省略してダミーデータ）
-                  caseData = {
-                    id: existingCaseData?.id, // 既存事例のIDを保持
-                    title: `${basicInfo?.companyName || ''}との商談事例`,
-                    companyName: basicInfo?.companyName || '',
-                    industry: basicInfo?.mainIndustry || '',
-                    industries: basicInfo?.industry || [],
-                    region: basicInfo?.region || '',
-                    prefecture: basicInfo?.prefecture || '',
-                    city: basicInfo?.city || '',
-                    companySize: basicInfo?.companySize || 'medium',
-                    challenges: ['収益性の向上が必要', '業務効率化の課題'],
-                    challengeSummaries: ['収益性向上', '業務効率化'],
-                    needs: ['コスト削減の実現', '作業時間の短縮'],
-                    proposals: ['システム導入による自動化', 'プロセス改善提案'],
-                    results: [],
-                    tags: ['進行中']
-                    // orderStatus will be determined in final confirmation screen
-                  };
-                } else {
-                  // 基本的な事例データを生成
-                  caseData = {
-                    id: existingCaseData?.id, // 既存事例のIDを保持
-                    title: `${basicInfo?.companyName || ''}との商談`,
-                    companyName: basicInfo?.companyName || '',
-                    industry: basicInfo?.mainIndustry || '',
-                    industries: basicInfo?.industry || [],
-                    region: basicInfo?.region || '',
-                    prefecture: basicInfo?.prefecture || '',
-                    city: basicInfo?.city || '',
-                    companySize: basicInfo?.companySize || 'medium',
-                    challenges: ['商談内容を整理中'],
-                    challengeSummaries: ['商談内容整理中'],
-                    needs: ['ニーズを整理中'],
-                    proposals: ['提案内容を整理中'],
-                    results: [],
-                    tags: ['進行中']
-                    // orderStatus will be determined in final confirmation screen
-                  };
-                }
+                // AI生成データを使用して確認・編集画面へ
+                const caseData = {
+                  id: existingCaseData?.id, // 既存事例のIDを保持
+                  title: `${basicInfo?.companyName || ''}との商談事例`,
+                  companyName: basicInfo?.companyName || '',
+                  industry: basicInfo?.mainIndustry || '',
+                  industries: basicInfo?.industry || [],
+                  region: basicInfo?.region || '',
+                  prefecture: basicInfo?.prefecture || '',
+                  city: basicInfo?.city || '',
+                  companySize: basicInfo?.companySize || 'medium',
+                  // AI生成データを使用
+                  challenges: aiDataReceived.map(item => item.challenge),
+                  challengeSummaries: aiDataReceived.map(item => item.title),
+                  needs: aiDataReceived.map(item => item.need),
+                  proposals: aiDataReceived.map(item => item.proposal),
+                  results: [],
+                  tags: ['進行中']
+                  // orderStatus will be determined in final confirmation screen
+                };
                 
                 onReviewEdit(caseData, messages, conversationHistory);
               }}
-              disabled={isLoading || isCompleted}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={isLoading || isCompleted || !canTemporarySave}
+              className={`px-4 py-2 text-sm font-medium border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                canTemporarySave
+                  ? 'text-white bg-blue-600 hover:bg-blue-700'
+                  : 'text-gray-500 bg-gray-400 cursor-not-allowed'
+              }`}
             >
               追加
             </button>
