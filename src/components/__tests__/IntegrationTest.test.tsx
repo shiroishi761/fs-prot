@@ -89,7 +89,7 @@ describe('Refactored App Integration Tests', () => {
     });
 
     // Navigate to My Cases
-    const myCasesButton = screen.getByText(/マイ事例/);
+    const myCasesButton = screen.getByText(/事例履歴/);
     fireEvent.click(myCasesButton);
 
     await waitFor(() => {
@@ -132,7 +132,7 @@ describe('Refactored App Integration Tests', () => {
 
     // Navigate to My Cases
     await waitFor(() => {
-      const myCasesButton = screen.getByText(/マイ事例/);
+      const myCasesButton = screen.getByText(/事例履歴/);
       fireEvent.click(myCasesButton);
     });
 

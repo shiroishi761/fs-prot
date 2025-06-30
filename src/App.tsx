@@ -319,7 +319,7 @@ function App() {
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
-              title={!sidebarOpen ? 'マイ事例' : ''}
+              title={!sidebarOpen ? '事例履歴' : ''}
             >
               <div className="w-5 h-5 mr-3 flex items-center justify-center">
                 📄
@@ -327,7 +327,7 @@ function App() {
               <span className={`transition-opacity duration-300 ${
                 sidebarOpen ? 'opacity-100' : 'opacity-0 sr-only'
               }`}>
-                マイ事例
+                事例履歴
               </span>
             </button>
             
