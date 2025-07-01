@@ -122,11 +122,6 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
     setIsLoading(true);
 
     try {
-      // 会話履歴を先に更新
-      const updatedHistory: ConversationHistory[] = [
-        ...conversationHistory,
-        { role: 'user' as const, parts: currentInput }
-      ].slice(-10); // 最新の10件のみ保持
 
       // Gemini APIを呼び出し（将来的にはFastAPI連携に変更）
       const result = await geminiService.continueConversation(
