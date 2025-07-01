@@ -260,6 +260,8 @@ function App() {
       setChatMessages(initialMessages);
       setChatConversationHistory([]);
       setShowCaseCollector(true);
+      // サイドバーのフォーカスを事例追加に遷移
+      setCurrentView('add');
     }
   };
 
