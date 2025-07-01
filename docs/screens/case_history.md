@@ -5,9 +5,11 @@
 
 ## 画面
 ![事例履歴画面](imgs/case_history.png)
+![事例詳細ポップアップ](imgs/case_history_detail.png)
 ![事例編集画面](imgs/case_history_edit.png)
 ![削除確認ダイアログ](imgs/case_history_delete.png)
 ![AIヒヤリング再開](imgs/case_history_hearing_restart.png)
+
 
 ## 機能仕様
 
@@ -22,6 +24,7 @@
 - **ヒヤリング再開ボタン**: 非公開ステータスの事例のみ表示
 - **編集ボタン**: 編集画面へ遷移
 - **削除ボタン**: 削除確認アラート表示
+- 事例履歴画面の事例詳細ポップアップではお気に入り追加のハートは表示しない
 
 ### 3. 編集機能
 - 基本情報（企業名、業種、地域、規模、市区町村）の編集

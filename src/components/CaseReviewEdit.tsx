@@ -284,6 +284,20 @@ export const CaseReviewEdit: React.FC<CaseReviewEditProps> = ({
           {Array.from({ length: currentSets }, (_, setIndex) => (
             <div key={setIndex} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
               <div className="space-y-4">
+                {/* タイトル */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    タイトル
+                  </label>
+                  <textarea
+                    value={(editedData.challengeSummaries || [])[setIndex] || ''}
+                    onChange={(e) => handleSetFieldChange(setIndex, 'challengeSummaries', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={2}
+                    placeholder="課題の要約・タイトルを入力してください"
+                  />
+                </div>
+
                 {/* 課題 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -298,19 +312,6 @@ export const CaseReviewEdit: React.FC<CaseReviewEditProps> = ({
                   />
                 </div>
 
-                {/* 課題要約 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    課題要約（カード見出し用）
-                  </label>
-                  <input
-                    type="text"
-                    value={(editedData.challengeSummaries || [])[setIndex] || ''}
-                    onChange={(e) => handleSetFieldChange(setIndex, 'challengeSummaries', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="課題の要約を入力してください"
-                  />
-                </div>
 
                 {/* ニーズ */}
                 <div>

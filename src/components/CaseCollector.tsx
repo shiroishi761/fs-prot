@@ -78,8 +78,17 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
     if (savedMessages && savedMessages.length > 0) {
       setIsCompleted(false);
       setShowConfirmation(false);
+      // メッセージがある場合は一時保存を有効化
+      setCanTemporarySave(true);
     }
   }, [savedMessages]);
+
+  // メッセージが増えたら一時保存を有効化（最初のAIメッセージ以外）
+  React.useEffect(() => {
+    if (messages.length > 1) {
+      setCanTemporarySave(true);
+    }
+  }, [messages]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -285,7 +294,7 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
         <div className="px-4 pb-4">
           {!canTemporarySave && (
             <div className="text-sm text-gray-500 mb-3 text-center">
-              💡 AIが課題やニーズを整理できたら、保存ボタンが有効になります
+              💡 会話を開始すると、保存ボタンが有効になります
             </div>
           )}
           <div className="flex justify-end space-x-3">
@@ -297,7 +306,7 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
             </button>
             <button
               onClick={() => {
-                // AI生成データを使用して事例データを生成
+                // 事例データを生成（AI生成データがあれば使用、なければ空配列）
                 const caseData = {
                   title: `${basicInfo?.companyName || ''}との商談`,
                   companyName: basicInfo?.companyName || '',
@@ -307,11 +316,11 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   prefecture: basicInfo?.prefecture || '',
                   city: basicInfo?.city || '',
                   companySize: basicInfo?.companySize || 'medium',
-                  // AI生成データを使用
-                  challenges: aiDataReceived.map(item => item.challenge),
-                  challengeSummaries: aiDataReceived.map(item => item.title),
-                  needs: aiDataReceived.map(item => item.need),
-                  proposals: aiDataReceived.map(item => item.proposal),
+                  // AI生成データがあれば使用、なければ空配列
+                  challenges: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.challenge) : [],
+                  challengeSummaries: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.title) : [],
+                  needs: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.need) : [],
+                  proposals: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.proposal) : [],
                   results: [],
                   tags: ['進行中'],
                   orderStatus: 'in_progress' as const
@@ -330,7 +339,7 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
             </button>
             <button
               onClick={() => {
-                // AI生成データを使用して確認・編集画面へ
+                // 確認・編集画面へのデータ準備（AI生成データがあれば使用、なければ空配列）
                 const caseData = {
                   id: existingCaseData?.id, // 既存事例のIDを保持
                   title: `${basicInfo?.companyName || ''}との商談事例`,
@@ -341,11 +350,11 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   prefecture: basicInfo?.prefecture || '',
                   city: basicInfo?.city || '',
                   companySize: basicInfo?.companySize || 'medium',
-                  // AI生成データを使用
-                  challenges: aiDataReceived.map(item => item.challenge),
-                  challengeSummaries: aiDataReceived.map(item => item.title),
-                  needs: aiDataReceived.map(item => item.need),
-                  proposals: aiDataReceived.map(item => item.proposal),
+                  // AI生成データがあれば使用、なければ空配列
+                  challenges: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.challenge) : [],
+                  challengeSummaries: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.title) : [],
+                  needs: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.need) : [],
+                  proposals: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.proposal) : [],
                   results: [],
                   tags: ['進行中']
                   // orderStatus will be determined in final confirmation screen
