@@ -51,13 +51,21 @@ function App() {
     handleFiltersChange,
     handleRemoveFilter
   } = useSearch(mockCases, favorites);
+  // Get current results based on view
+  const currentResults = React.useMemo(() => {
+    if (currentView === 'list') {
+      return searchCases(mockCases, myPageFilters, new Set());
+    }
+    return searchResults;
+  }, [currentView, mockCases, myPageFilters, searchResults]);
+
   const {
     selectedCase,
     selectedCaseIndex,
     handleCaseSelect,
     handleCaseNavigate,
     handleCaseDetailClose
-  } = useCaseNavigation(searchResults);
+  } = useCaseNavigation(currentResults);
 
 
   // Initialize search results when mockCases or favorites change
@@ -403,7 +411,7 @@ function App() {
               />
               
               <CaseList
-                searchResults={searchCases(mockCases, myPageFilters, new Set())}
+                searchResults={currentResults}
                 loading={false}
                 onCaseSelect={handleCaseSelect}
                 showFavorite={false}
@@ -458,7 +466,9 @@ function App() {
           onClose={handleCaseDetailClose}
           onNavigate={handleCaseNavigate}
           hasPrev={selectedCaseIndex > 0}
-          hasNext={selectedCaseIndex < searchResults.length - 1}
+          hasNext={selectedCaseIndex < currentResults.length - 1}
+          isFavorite={currentView === 'search' ? favorites.has(selectedCase.id) : undefined}
+          onToggleFavorite={currentView === 'search' ? toggleFavorite : undefined}
         />
       )}
 

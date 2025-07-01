@@ -7,6 +7,8 @@ interface CaseDetailProps {
   onNavigate?: (direction: 'prev' | 'next') => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (caseId: string) => void;
 }
 
 const CaseDetail: React.FC<CaseDetailProps> = ({ 
@@ -14,7 +16,9 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
   onClose,
   onNavigate,
   hasPrev = false,
-  hasNext = false
+  hasNext = false,
+  isFavorite = false,
+  onToggleFavorite
 }) => {
   // State for expanding sections
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
@@ -78,7 +82,16 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
   // Reset expanded sections when case changes
   useEffect(() => {
     if (caseData) {
-      setExpandedSections(new Set());
+      // Calculate the number of sections and expand all by default
+      const challengesCount = caseData.challenges?.length || (caseData.challenge ? 1 : 0);
+      const needsCount = caseData.needs?.length || 0;
+      const proposalsCount = (caseData.orderStatus === 'won') ? 
+        (caseData.proposals?.length || (caseData.proposal ? 1 : 0)) : 0;
+      const maxSets = Math.max(challengesCount, needsCount, proposalsCount);
+      
+      // Create set with all section indices to expand all sections by default
+      const allSections = new Set(Array.from({ length: maxSets }, (_, i) => i));
+      setExpandedSections(allSections);
     }
   }, [caseData]);
 
@@ -115,14 +128,33 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
               <p className="text-sm text-gray-600 mt-1">{caseData.companyName}</p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Favorite button */}
+            {onToggleFavorite && (
+              <button
+                onClick={() => onToggleFavorite(caseData.id)}
+                className={`transition-colors ${
+                  isFavorite 
+                    ? 'text-red-500 hover:text-red-600' 
+                    : 'text-gray-400 hover:text-red-500'
+                }`}
+                title={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+              >
+                <svg className="w-5 h-5" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+            )}
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Meta information - Fixed */}
