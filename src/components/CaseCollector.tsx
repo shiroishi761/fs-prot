@@ -359,7 +359,7 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   : 'text-gray-500 bg-gray-400 cursor-not-allowed'
               }`}
             >
-              追加
+              保存
             </button>
           </div>
         </div>

@@ -4,169 +4,6 @@
 
 建設業界向け営業支援システム「BRANU」の詳細設計書。Next.js 15 + FastAPI + PostgreSQL構成で、Amazon Bedrock (Claude 3) を活用したAI powered な事例管理と検索機能を提供。
 
-## データベース設計
-
-### テーブル一覧
-
-| テーブル名 | 説明 |
-|-----------|------|
-| users | ユーザー情報（AWS Cognito連携） |
-| companies | 会社情報 |
-| company_sizes | 会社規模マスター |
-| deals | 商談情報 |
-| cases | 事例情報 |
-| case_challenges | 事例課題詳細 |
-| case_needs | 事例ニーズ詳細 |
-| case_proposals | 事例提案詳細 |
-| user_favorites | お気に入り |
-| industries | 業種マスター |
-| company_industries | 会社-業種関連 |
-| tags | タグマスター |
-| case_tags | 事例-タグ関連 |
-| regions | 地域マスター |
-| prefectures | 都道府県マスター |
-| cities | 市区町村マスター |
-
-### 詳細テーブル設計
-
-#### users（ユーザー）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| cognito_id | VARCHAR(255) | UNIQUE, NOT NULL | Cognito ID |
-| name | VARCHAR(100) | NOT NULL | ユーザー名 |
-| email | VARCHAR(255) | UNIQUE, NOT NULL | メールアドレス |
-| role | VARCHAR(20) | NOT NULL | 権限(admin, user) |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### companies（会社）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| name | VARCHAR(255) | NOT NULL | 会社名 |
-| size_id | UUID | FOREIGN KEY | 規模ID |
-| region_id | UUID | FOREIGN KEY | 地域ID |
-| prefecture_id | UUID | FOREIGN KEY | 都道府県ID |
-| city_id | UUID | FOREIGN KEY | 市区町村ID |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### company_sizes（会社規模マスター)
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| code | VARCHAR(20) | UNIQUE, NOT NULL | 規模コード |
-| name | VARCHAR(50) | NOT NULL | 規模名称 |
-| sort_order | INTEGER | DEFAULT 0 | 表示順 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### deals（商談）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| title | VARCHAR(255) | NOT NULL | 商談タイトル |
-| company_id | UUID | FOREIGN KEY | 会社ID |
-| user_id | UUID | FOREIGN KEY | 作成者ID |
-| deal_status | VARCHAR(20) | NOT NULL | 商談状況(won, lost, in_progress) |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### cases（事例）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| deal_id | UUID | FOREIGN KEY | 商談ID |
-| title | VARCHAR(255) | NOT NULL | 事例タイトル |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### case_challenges（事例課題）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| case_id | UUID | FOREIGN KEY | 事例ID |
-| content | TEXT | NOT NULL | 課題内容 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### case_needs（事例ニーズ）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| case_id | UUID | FOREIGN KEY | 事例ID |
-| content | TEXT | NOT NULL | ニーズ内容 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### case_proposals（事例提案）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| case_id | UUID | FOREIGN KEY | 事例ID |
-| content | TEXT | NOT NULL | 提案内容 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### user_favorites（お気に入り）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| user_id | UUID | FOREIGN KEY | ユーザーID |
-| case_id | UUID | FOREIGN KEY | 事例ID |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### industries（業種）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| name | VARCHAR(100) | UNIQUE, NOT NULL | 業種名 |
-| sort_order | INTEGER | DEFAULT 0 | 表示順 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### company_industries（会社業種関連）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| company_id | UUID | FOREIGN KEY | 会社ID |
-| industry_id | UUID | FOREIGN KEY | 業種ID |
-| is_main | BOOLEAN | DEFAULT FALSE | 主要業種フラグ |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### tags（タグ）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| name | VARCHAR(50) | UNIQUE, NOT NULL | タグ名 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### case_tags（事例タグ関連）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| case_id | UUID | FOREIGN KEY | 事例ID |
-| tag_id | UUID | FOREIGN KEY | タグID |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### regions（地域）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| code | VARCHAR(10) | UNIQUE, NOT NULL | 地域コード |
-| name | VARCHAR(50) | UNIQUE, NOT NULL | 地域名 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### prefectures（都道府県）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| region_id | UUID | FOREIGN KEY | 地域ID |
-| code | VARCHAR(10) | UNIQUE, NOT NULL | 都道府県コード |
-| name | VARCHAR(50) | UNIQUE, NOT NULL | 都道府県名 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
-#### cities（市区町村）
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | UUID | PRIMARY KEY | UUID |
-| prefecture_id | UUID | FOREIGN KEY | 都道府県ID |
-| code | VARCHAR(10) | UNIQUE, NOT NULL | 市区町村コード |
-| name | VARCHAR(50) | UNIQUE, NOT NULL | 市区町村名 |
-| created_at | TIMESTAMP | DEFAULT NOW() | 作成日時 |
-
 ## アーキテクチャ設計
 
 ### システム構成
@@ -239,7 +76,7 @@ POST /ai-interview/process (FastAPI)
 {
   "success": true,
   "message": "こんにちは！基本情報を確認いたしました...",
-  "aiData": null  // 初回は構造化データなし
+  "result": null  // 初回は構造化データなし
 }
 ```
 
@@ -267,7 +104,7 @@ POST /api/ai-interview (同一エンドポイント)
 {
   "success": true,
   "message": "それは重要な課題ですね...",
-  "aiData": [  // 十分な情報が集まった場合のみ（初回は通常null）
+  "result": [  // 十分な情報が集まった場合のみ（初回は通常null）
     {
       "title": "建設現場の安全管理改善",
       "challenge": "現場での安全事故が多発している",
@@ -282,7 +119,7 @@ POST /api/ai-interview (同一エンドポイント)
 ```typescript
 // FastAPIから構造化データを受信した時点で保存可能
 useEffect(() => {
-  if (response.aiData && response.aiData.length > 0) {
+  if (response.result && response.result.length > 0) {
     setCanTemporarySave(true);  // 一時保存ボタン有効化
     // ユーザーに進捗を通知
     showNotification('事例情報が整理されました！保存できます。');
@@ -373,7 +210,7 @@ onReviewEdit(caseData, messages, conversationHistory);
 ```json
 {
   "success": true,
-  "aiData": [
+  "result": [
     {
       "title": "建設現場の安全管理改善",
       "challenge": "現場での安全事故が多発している",
@@ -986,19 +823,19 @@ const validateBasicInfo = (data: CaseBasicInfo) => {
 - **ボタン**: 一時保存・追加（確認画面へ）
 
 #### 一時保存機能
-- **表示条件**: FastAPIから構造化データ（aiData）を受信後のみ有効
+- **表示条件**: FastAPIから構造化データ（result）を受信後のみ有効
 - **初期状態**: ボタン無効、説明テキスト表示
 
 ```typescript
 const [canTemporarySave, setCanTemporarySave] = useState(false);
-const [aiDataReceived, setAiDataReceived] = useState(null);
+const [resultReceived, setresultReceived] = useState(null);
 
-// FastAPIからaiDataが返ってきた時
+// FastAPIからresultが返ってきた時
 useEffect(() => {
-  if (aiDataReceived && aiDataReceived.length > 0) {
+  if (resultReceived && resultReceived.length > 0) {
     setCanTemporarySave(true);
   }
-}, [aiDataReceived]);
+}, [resultReceived]);
 
 const handleTemporarySave = async () => {
   const caseData = {
@@ -1006,9 +843,9 @@ const handleTemporarySave = async () => {
     title: `${basicInfo.companyName}との商談`,
     orderStatus: 'in_progress',
     // AI生成データを使用
-    challenges: aiDataReceived.map(item => item.challenge),
-    needs: aiDataReceived.map(item => item.need),
-    proposals: aiDataReceived.map(item => item.proposal)
+    challenges: resultReceived.map(item => item.challenge),
+    needs: resultReceived.map(item => item.need),
+    proposals: resultReceived.map(item => item.proposal)
   };
   
   await fetch('/api/cases', {
