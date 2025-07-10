@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SearchFilters, INDUSTRIES, REGIONS, COMMON_TAGS, AREA_HIERARCHY } from '../types/case';
+import { SearchFilters, INDUSTRIES, REGIONS, COMMON_TAGS, AREA_HIERARCHY, NECK_TYPES, FIVE_CHALLENGES } from '../types/case';
 import { generateSearchSuggestions } from '../utils/search';
 import { mockCases } from '../data/mockCases';
 
@@ -29,7 +29,10 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   const [hoveredPrefecture, setHoveredPrefecture] = useState<string>('');
   const [popupTimeouts, setPopupTimeouts] = useState<{[key: string]: NodeJS.Timeout}>({});
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
-  const [showCompanySizeDropdown, setShowCompanySizeDropdown] = useState(false);
+  const [showNeckDropdown, setShowNeckDropdown] = useState(false);
+  const [showChallengeDropdown, setShowChallengeDropdown] = useState(false);
+  const [selectedNeckTypes, setSelectedNeckTypes] = useState<string[]>(filters.neckTypes || []);
+  const [selectedChallenges, setSelectedChallenges] = useState<string[]>(filters.challenges || []);
 
   // Generate search suggestions
   const updateSuggestions = useCallback((searchQuery: string) => {
@@ -199,7 +202,10 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     setShowPrefecturePopup(false);
     setShowCityPopup(false);
     setShowIndustryDropdown(false);
-    setShowCompanySizeDropdown(false);
+    setShowNeckDropdown(false);
+    setShowChallengeDropdown(false);
+    setSelectedNeckTypes([]);
+    setSelectedChallenges([]);
     onFiltersChange({});
   };
 
@@ -222,6 +228,8 @@ const SearchBox: React.FC<SearchBoxProps> = ({
     setSelectedRegion(filters.region || '');
     setSelectedPrefecture(filters.prefecture || '');
     setSelectedCity(filters.city || '');
+    setSelectedNeckTypes(filters.neckTypes || []);
+    setSelectedChallenges(filters.challenges || []);
   }, [filters]);
 
 
@@ -253,9 +261,14 @@ const SearchBox: React.FC<SearchBoxProps> = ({
         setShowIndustryDropdown(false);
       }
       
-      // Check if click is outside company size dropdown
-      if (!target.closest('.company-size-filter')) {
-        setShowCompanySizeDropdown(false);
+      // Check if click is outside neck dropdown
+      if (!target.closest('.neck-filter')) {
+        setShowNeckDropdown(false);
+      }
+      
+      // Check if click is outside challenge dropdown
+      if (!target.closest('.challenge-filter')) {
+        setShowChallengeDropdown(false);
       }
     };
 
@@ -329,7 +342,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({
         </div>
 
         {/* Filter Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Location Filter */}
           <div className="relative location-filter">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -525,76 +538,120 @@ const SearchBox: React.FC<SearchBoxProps> = ({
             )}
           </div>
 
-          {/* Company Size Filter */}
-          <div className="relative company-size-filter">
+          {/* Neck Type Filter */}
+          <div className="relative neck-filter">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              企業規模
+              ネック
             </label>
             <button
               type="button"
-              onClick={() => setShowCompanySizeDropdown(!showCompanySizeDropdown)}
+              onClick={() => setShowNeckDropdown(!showNeckDropdown)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white flex justify-between items-center"
             >
-              <span className={filters.companySize ? 'text-gray-900' : 'text-gray-500'}>
-                {filters.companySize === 'small' && '小規模（〜50名）'}
-                {filters.companySize === 'medium' && '中規模（50-300名）'}
-                {filters.companySize === 'large' && '大規模（300名〜）'}
-                {!filters.companySize && 'すべての規模'}
+              <span className={selectedNeckTypes.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                {selectedNeckTypes.length > 0 
+                  ? `${selectedNeckTypes.length}件選択中`
+                  : 'すべてのネック'}
               </span>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
-            {/* Company Size Dropdown */}
-            {showCompanySizeDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleFilterChange('companySize', undefined);
-                    setShowCompanySizeDropdown(false);
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-500"
-                >
-                  すべての規模
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleFilterChange('companySize', 'small');
-                    setShowCompanySizeDropdown(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
-                    filters.companySize === 'small' ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
-                  }`}
-                >
-                  小規模（〜50名）
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleFilterChange('companySize', 'medium');
-                    setShowCompanySizeDropdown(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
-                    filters.companySize === 'medium' ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
-                  }`}
-                >
-                  中規模（50-300名）
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleFilterChange('companySize', 'large');
-                    setShowCompanySizeDropdown(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 ${
-                    filters.companySize === 'large' ? 'bg-blue-100 text-blue-700' : 'text-gray-900'
-                  }`}
-                >
-                  大規模（300名〜）
-                </button>
+            {/* Neck Dropdown */}
+            {showNeckDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedNeckTypes([]);
+                      handleFilterChange('neckTypes', undefined);
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    すべて解除
+                  </button>
+                </div>
+                {NECK_TYPES.map((neckType) => (
+                  <label
+                    key={neckType}
+                    className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedNeckTypes.includes(neckType)}
+                      onChange={() => {
+                        const newNeckTypes = selectedNeckTypes.includes(neckType)
+                          ? selectedNeckTypes.filter(t => t !== neckType)
+                          : [...selectedNeckTypes, neckType];
+                        setSelectedNeckTypes(newNeckTypes);
+                        handleFilterChange('neckTypes', newNeckTypes.length > 0 ? newNeckTypes : undefined);
+                      }}
+                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-900">{neckType}ネック</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 課題 Filter */}
+          <div className="relative challenge-filter">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              課題
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowChallengeDropdown(!showChallengeDropdown)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white flex justify-between items-center"
+            >
+              <span className={selectedChallenges.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                {selectedChallenges.length > 0 
+                  ? `${selectedChallenges.length}件選択中`
+                  : 'すべての課題'}
+              </span>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Challenge Dropdown */}
+            {showChallengeDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedChallenges([]);
+                      handleFilterChange('challenges', undefined);
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    すべて解除
+                  </button>
+                </div>
+                {FIVE_CHALLENGES.map((challenge) => (
+                  <label
+                    key={challenge}
+                    className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedChallenges.includes(challenge)}
+                      onChange={() => {
+                        const newChallenges = selectedChallenges.includes(challenge)
+                          ? selectedChallenges.filter(c => c !== challenge)
+                          : [...selectedChallenges, challenge];
+                        setSelectedChallenges(newChallenges);
+                        handleFilterChange('challenges', newChallenges.length > 0 ? newChallenges : undefined);
+                      }}
+                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-900">{challenge}</span>
+                  </label>
+                ))}
               </div>
             )}
           </div>

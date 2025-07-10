@@ -19,7 +19,6 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
     (filters.regions && filters.regions.length > 0) ||
     filters.prefecture ||
     filters.city ||
-    filters.companySize ||
     (filters.tags && filters.tags.length > 0) ||
     filters.favorites ||
     filters.publicationStatus
@@ -107,26 +106,6 @@ const SearchConditionTags: React.FC<SearchConditionTagsProps> = ({
             onClick={() => onRemoveFilter('region')}
             className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
             title="地域フィルターを削除"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Company size tag */}
-      {filters.companySize && (
-        <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full flex items-center gap-2">
-          <span>
-            {filters.companySize === 'small' && '小規模（〜50名）'}
-            {filters.companySize === 'medium' && '中規模（50-300名）'}
-            {filters.companySize === 'large' && '大規模（300名〜）'}
-          </span>
-          <button
-            onClick={() => onRemoveFilter('companySize')}
-            className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
-            title="企業規模フィルターを削除"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

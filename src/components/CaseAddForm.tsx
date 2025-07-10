@@ -8,7 +8,6 @@ interface CaseBasicInfo {
   region: string;
   prefecture: string;
   city: string;
-  companySize: 'small' | 'medium' | 'large';
 }
 
 interface CaseAddFormProps {
@@ -23,8 +22,7 @@ export const CaseAddForm: React.FC<CaseAddFormProps> = ({ onStartInterview, onCl
     mainIndustry: '',
     region: '',
     prefecture: '',
-    city: '',
-    companySize: 'medium'
+    city: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -144,14 +142,6 @@ export const CaseAddForm: React.FC<CaseAddFormProps> = ({ onStartInterview, onCl
     }
   };
 
-  const getCompanySizeLabel = (size: string) => {
-    switch (size) {
-      case 'small': return '小規模（〜50名）';
-      case 'medium': return '中規模（50-300名）';
-      case 'large': return '大規模（300名〜）';
-      default: return size;
-    }
-  };
 
   // 選択された地域の都道府県一覧
   const prefectures = formData.region ? Object.keys(AREA_HIERARCHY[formData.region as keyof typeof AREA_HIERARCHY] || {}) : [];
@@ -357,23 +347,6 @@ export const CaseAddForm: React.FC<CaseAddFormProps> = ({ onStartInterview, onCl
                 <p className="mt-1 text-sm text-red-500">{errors.city}</p>
               )}
             </div>
-          </div>
-
-          {/* 企業規模 */}
-          <div>
-            <label htmlFor="companySize" className="block text-sm font-medium text-gray-700 mb-2">
-              企業規模 <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="companySize"
-              value={formData.companySize}
-              onChange={(e) => setFormData(prev => ({ ...prev, companySize: e.target.value as 'small' | 'medium' | 'large' }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="small">{getCompanySizeLabel('small')}</option>
-              <option value="medium">{getCompanySizeLabel('medium')}</option>
-              <option value="large">{getCompanySizeLabel('large')}</option>
-            </select>
           </div>
 
           {/* ボタン */}

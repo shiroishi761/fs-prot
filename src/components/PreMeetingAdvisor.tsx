@@ -11,7 +11,6 @@ interface PreMeetingAdvisorProps {
 interface MeetingInfo {
   industry: string;
   region: string;
-  companySize: 'small' | 'medium' | 'large';
   companyName?: string;
   meetingPurpose?: string;
 }
@@ -32,8 +31,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
   const [step, setStep] = useState<'input' | 'advice'>('input');
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo>({
     industry: '',
-    region: '',
-    companySize: 'medium'
+    region: ''
   });
   const [adviceList, setAdviceList] = useState<Advice[]>([]);
   const [relatedCases, setRelatedCases] = useState<Case[]>([]);
@@ -56,12 +54,9 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
     const successCases = cases.filter(c => {
       const sameIndustry = c.industry === meetingInfo.industry;
       const sameRegion = c.region === meetingInfo.region;
-      const sameSize = c.companySize === meetingInfo.companySize;
       
-      // 少なくとも2つの条件が一致
-      return (sameIndustry && sameRegion) || 
-             (sameIndustry && sameSize) || 
-             (sameRegion && sameSize);
+      // 業種と地域の両方または少なくとも一つが一致
+      return sameIndustry && sameRegion;
     }).slice(0, 5);
 
     setRelatedCases(successCases);
@@ -69,8 +64,8 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
     // 関連する失敗パターンを検索
     const failurePatterns = reflections.filter(r => {
       const sameIndustry = r.industry === meetingInfo.industry;
-      const sameSize = r.companySize === meetingInfo.companySize;
-      return sameIndustry || sameSize;
+      const sameRegion = r.region === meetingInfo.region;
+      return sameIndustry || sameRegion;
     });
 
     // アドバイスを生成
@@ -78,7 +73,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
 
     // ノウハウデータベースからのアドバイス
     const insight = keyInsights.find(i => 
-      i.industry === meetingInfo.industry && i.companySize === meetingInfo.companySize
+      i.industry === meetingInfo.industry
     );
 
     if (insight) {
@@ -87,7 +82,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
         generatedAdvice.push({
           category: 'アプローチ',
           title: `${approach}をメインに訴求`,
-          description: `${meetingInfo.industry}の${meetingInfo.companySize === 'small' ? '小規模' : meetingInfo.companySize === 'medium' ? '中規模' : '大規模'}企業では、${approach}が特に関心を持たれやすいです。`,
+          description: `${meetingInfo.industry}では、${approach}が特に関心を持たれやすいです。`,
           priority: index === 0 ? 'high' : 'medium',
           basedOn: 'success'
         });
@@ -120,7 +115,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
     const relevantSuccessPatterns = salesPatterns.filter(p => 
       p.type === 'success' && 
       p.industry === meetingInfo.industry &&
-      (p.companySize === meetingInfo.companySize || ['approach', 'hearing'].includes(p.stage))
+      ['approach', 'hearing'].includes(p.stage)
     );
 
     relevantSuccessPatterns.slice(0, 3).forEach(pattern => {
@@ -137,7 +132,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
     const relevantFailurePatterns = salesPatterns.filter(p => 
       p.type === 'failure' && 
       p.industry === meetingInfo.industry &&
-      (p.companySize === meetingInfo.companySize || ['approach', 'hearing'].includes(p.stage))
+      ['approach', 'hearing'].includes(p.stage)
     );
 
     relevantFailurePatterns.slice(0, 2).forEach(pattern => {
@@ -238,24 +233,6 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
       basedOn: undefined
     });
 
-    // 企業規模に応じたアドバイス
-    if (meetingInfo.companySize === 'small') {
-      generatedAdvice.push({
-        category: 'アプローチ',
-        title: 'スモールスタートを提案',
-        description: '小規模企業では、段階的な導入やお試しプランから始めることを提案すると受け入れられやすいです。',
-        priority: 'high',
-        basedOn: undefined
-      });
-    } else if (meetingInfo.companySize === 'large') {
-      generatedAdvice.push({
-        category: 'アプローチ',
-        title: 'ROIを明確に示す',
-        description: '大規模企業では、投資対効果（ROI）や導入後のKPIを明確に示すことが重要です。',
-        priority: 'high',
-        basedOn: undefined
-      });
-    }
 
     setAdviceList(generatedAdvice.sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
@@ -366,46 +343,6 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  企業規模 <span className="text-red-500">*</span>
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="companySize"
-                      value="small"
-                      checked={meetingInfo.companySize === 'small'}
-                      onChange={(e) => setMeetingInfo({...meetingInfo, companySize: 'small'})}
-                      className="mr-2"
-                    />
-                    小規模（〜50名）
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="companySize"
-                      value="medium"
-                      checked={meetingInfo.companySize === 'medium'}
-                      onChange={(e) => setMeetingInfo({...meetingInfo, companySize: 'medium'})}
-                      className="mr-2"
-                    />
-                    中規模（50〜300名）
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="companySize"
-                      value="large"
-                      checked={meetingInfo.companySize === 'large'}
-                      onChange={(e) => setMeetingInfo({...meetingInfo, companySize: 'large'})}
-                      className="mr-2"
-                    />
-                    大規模（300名〜）
-                  </label>
-                </div>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -437,10 +374,7 @@ export const PreMeetingAdvisor: React.FC<PreMeetingAdvisorProps> = ({
               <h4 className="font-medium text-sm text-gray-700 mb-2">商談情報</h4>
               <div className="text-sm text-gray-600 space-y-1">
                 {meetingInfo.companyName && <p>企業名: {meetingInfo.companyName}</p>}
-                <p>業種: {meetingInfo.industry} / 地域: {meetingInfo.region} / 規模: {
-                  meetingInfo.companySize === 'small' ? '小規模' : 
-                  meetingInfo.companySize === 'medium' ? '中規模' : '大規模'
-                }</p>
+                <p>業種: {meetingInfo.industry} / 地域: {meetingInfo.region}</p>
               </div>
             </div>
 

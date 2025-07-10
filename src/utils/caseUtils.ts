@@ -9,8 +9,7 @@ export const createBasicInfoFromCase = (caseData: Case) => ({
   mainIndustry: caseData.industry,
   region: caseData.region,
   prefecture: caseData.prefecture || '',
-  city: caseData.city || '',
-  companySize: caseData.companySize
+  city: caseData.city || ''
 });
 
 /**
@@ -28,6 +27,6 @@ export const updateCaseTags = (orderStatus: string) => {
     case 'lost':
       return ['失注'];
     default:
-      return ['進行中'];
+      return [];
   }
 };

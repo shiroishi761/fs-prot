@@ -27,7 +27,7 @@ describe('CaseAddForm', () => {
     expect(screen.getByLabelText(/地域/)).toBeInTheDocument();
     expect(screen.getByLabelText(/都道府県/)).toBeInTheDocument();
     expect(screen.getByLabelText(/市区町村/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/企業規模/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/従業員人数/)).toBeInTheDocument();
     
     // ボタンの確認
     expect(screen.getByText('キャンセル')).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('CaseAddForm', () => {
     
     fireEvent.change(screen.getByLabelText(/都道府県/), { target: { value: '東京都' } });
     fireEvent.change(screen.getByLabelText(/市区町村/), { target: { value: '千代田区' } });
-    fireEvent.change(screen.getByLabelText(/企業規模/), { target: { value: 'large' } });
+    fireEvent.change(screen.getByLabelText(/従業員人数/), { target: { value: 'large' } });
     
     // フォーム送信
     fireEvent.click(screen.getByText('AIヒヤリング開始'));
@@ -121,10 +121,10 @@ describe('CaseAddForm', () => {
     });
   });
 
-  test('企業規模の選択肢とラベル', () => {
+  test('従業員人数の選択肢とラベル', () => {
     render(<CaseAddForm {...defaultProps} />);
     
-    const companySizeSelect = screen.getByLabelText(/企業規模/);
+    const companySizeSelect = screen.getByLabelText(/従業員人数/);
     
     // 選択肢の確認
     expect(screen.getByRole('option', { name: '小規模（〜50名）' })).toBeInTheDocument();

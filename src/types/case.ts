@@ -8,7 +8,6 @@ export interface Case {
   region: string;
   prefecture?: string;
   city?: string;
-  companySize: 'small' | 'medium' | 'large'; // small: ~50名, medium: 50-300名, large: 300名~
   orderStatus: 'won' | 'lost' | 'in_progress'; // 受注(won) / 失注(lost) / 進行中(in_progress)
   challenges?: string[];  // 複数の課題（現在困っていること）
   challengeSummaries?: string[]; // 複数の課題要約（カード見出し用）
@@ -18,6 +17,11 @@ export interface Case {
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
+  // ネック情報
+  neckType?: '価格' | 'タイミング' | '権限' | '競合' | '信頼' | 'その他';
+  customerStatement?: string; // 顧客の具体的な発言
+  action?: string; // 実施した対策
+  actionResult?: '成功' | '失敗' | '保留';
   // 後方互換性のため残しておく（古い形式）
   challenge?: string;
   challengeSummary?: string; // 単一課題要約（後方互換性用）
@@ -30,7 +34,6 @@ export interface Reflection {
   id: string;
   industry: string;
   region: string;
-  companySize: 'small' | 'medium' | 'large';
   situation: string; // 商談の状況
   failurePoint: string; // 失敗したポイント
   customerReaction: string; // 顧客の反応
@@ -47,8 +50,9 @@ export interface SearchFilters {
   regions?: string[];
   prefecture?: string;
   city?: string;
-  companySize?: 'small' | 'medium' | 'large';
   tags?: string[];
+  neckTypes?: string[]; // ネックタイプでの検索
+  challenges?: string[]; // 5大活用（課題）での検索
   dateFrom?: Date;
   dateTo?: Date;
   favorites?: boolean; // お気に入りのみ表示
@@ -164,13 +168,27 @@ export const AREA_HIERARCHY = {
   }
 } as const;
 
-// よく使われるタグ
-export const COMMON_TAGS = [
-  '受注',
-  '失注',
+// ネックタイプの定義
+export const NECK_TYPES = [
+  '価格',
+  'タイミング',
+  '権限',
+  '競合',
+  '信頼',
+  '体制'
+] as const;
+
+// 5大活用（課題）の定義
+export const FIVE_CHALLENGES = [
   '季節変動対策',
   '利益率改善',
-  '営業時間不足',
+  '業務効率化',
   '取引先分散',
   '人材不足解決'
+] as const;
+
+// よく使われるタグ（5大活用を除外）
+export const COMMON_TAGS = [
+  '受注',
+  '失注'
 ] as const;

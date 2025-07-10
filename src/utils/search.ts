@@ -274,15 +274,25 @@ function applyFilters(cases: Case[], filters: SearchFilters, favoritesSet?: Set<
     filteredCases = filteredCases.filter(c => c.city === filters.city);
   }
   
-  // 企業規模でフィルター
-  if (filters.companySize) {
-    filteredCases = filteredCases.filter(c => c.companySize === filters.companySize);
-  }
   
   // タグでフィルター
   if (filters.tags && filters.tags.length > 0) {
     filteredCases = filteredCases.filter(c => 
       filters.tags!.some(tag => c.tags.includes(tag))
+    );
+  }
+  
+  // ネックタイプでフィルター
+  if (filters.neckTypes && filters.neckTypes.length > 0) {
+    filteredCases = filteredCases.filter(c => 
+      c.neckType && filters.neckTypes!.includes(c.neckType)
+    );
+  }
+  
+  // 5大活用（課題）でフィルター
+  if (filters.challenges && filters.challenges.length > 0) {
+    filteredCases = filteredCases.filter(c => 
+      filters.challenges!.some(challenge => c.tags.includes(challenge))
     );
   }
   
@@ -418,11 +428,6 @@ export function getRelatedCases(
     // 同じ地域
     if (otherCase.region === currentCase.region) {
       score += 1;
-    }
-    
-    // 同じ企業規模
-    if (otherCase.companySize === currentCase.companySize) {
-      score += 2;
     }
     
     // 共通のタグ

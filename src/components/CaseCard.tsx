@@ -17,15 +17,6 @@ interface CaseCardProps {
 const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, onToggleFavorite, showFavorite = true, showTags = true, showActions = false, onEdit, onDelete, onContinue }) => {
   const { case: caseData, relevanceScore, matchedFields, highlights } = searchResult;
 
-  // Get company size label
-  const getCompanySizeLabel = (size: string) => {
-    switch (size) {
-      case 'small': return '小規模（〜50名）';
-      case 'medium': return '中規模（50-300名）';
-      case 'large': return '大規模（300名〜）';
-      default: return size;
-    }
-  };
 
   // Highlight matched keywords in text
   const highlightText = (text: string, fieldName: string) => {
@@ -125,20 +116,13 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
         </div>
       </div>
 
-      {/* Meta information - Line 2: Industry and Company Size */}
+      {/* Meta information - Line 2: Industry */}
       <div className="flex flex-wrap items-center gap-4 mb-3 text-xs text-gray-600">
         <div className="flex items-center">
           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
           {caseData.industry}
-        </div>
-        
-        <div className="flex items-center">
-          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          {getCompanySizeLabel(caseData.companySize)}
         </div>
       </div>
 
@@ -147,7 +131,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
       {showTags ? (
         <div className="flex items-center justify-between mb-2">
           <div className="flex flex-wrap gap-1">
-            {caseData.tags.slice(0, 4).map((tag, index) => (
+            {caseData.tags.filter(tag => tag === '受注' || tag === '失注').slice(0, 4).map((tag, index) => (
               <span
                 key={index}
                 className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
@@ -159,9 +143,9 @@ const CaseCard: React.FC<CaseCardProps> = ({ searchResult, onClick, isFavorite, 
                 {tag}
               </span>
             ))}
-            {caseData.tags.length > 4 && (
+            {caseData.tags.filter(tag => tag === '受注' || tag === '失注').length > 4 && (
               <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                +{caseData.tags.length - 4}
+                +{caseData.tags.filter(tag => tag === '受注' || tag === '失注').length - 4}
               </span>
             )}
           </div>

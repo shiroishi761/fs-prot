@@ -31,11 +31,6 @@ const saveCaseFunction = {
         type: 'string',
         description: '地域'
       },
-      companySize: {
-        type: 'string',
-        description: '企業規模',
-        enum: ['小規模（〜30名）', '中規模（30〜100名）', '大規模（100名〜）']
-      },
       challenge: {
         type: 'string',
         description: '顧客の課題'
@@ -56,7 +51,7 @@ const saveCaseFunction = {
         description: 'タグのリスト'
       }
     },
-    required: ['title', 'industry', 'region', 'companySize', 'challenge', 'proposal', 'result', 'tags']
+    required: ['title', 'industry', 'region', 'challenge', 'proposal', 'result', 'tags']
   }
 };
 */
@@ -68,10 +63,9 @@ const SYSTEM_PROMPT = `あなたは建設業界の営業支援AIアシスタン�
 以下の情報を自然な会話で聞き出してください：
 1. お客様の業種（建築、土木、設備工事など）
 2. 地域（都道府県）
-3. 企業規模（従業員数）
-4. お客様が抱えていた課題
-5. 提案した内容（CAREECONのどの機能をどのように活用するか）
-6. 結果（契約、検討中、デモ予定など）
+3. お客様が抱えていた課題
+4. 提案した内容（CAREECONのどの機能をどのように活用するか）
+5. 結果（契約、検討中、デモ予定など）
 
 会話は親しみやすく、営業担当者が話しやすい雰囲気を作ってください。
 必要な情報が揃ったら、save_case関数を使って事例を保存してください。
@@ -239,8 +233,6 @@ export class GeminiService {
       title: extractInfo(['タイトル', '案件'], '営業事例'),
       industry: extractInfo(['業種', '業界'], allText.includes('建築') ? '建築業' : '建設業'),
       region: extractInfo(['地域', '都道府県'], '東京都'),
-      companySize: allText.includes('大手') || allText.includes('100人') ? 'large' : 
-                   allText.includes('中小') || allText.includes('30') ? 'small' : 'medium',
       orderStatus: allText.includes('失注') || allText.includes('断られ') || allText.includes('見送り') ? 'lost' : 'won',
       challenge: extractInfo(['課題', '問題', '困っている'], '業務効率化の課題'),
       proposal: extractInfo(['提案', '解決策'], 'CAREECONを活用した解決策'),

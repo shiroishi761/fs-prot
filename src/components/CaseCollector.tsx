@@ -21,7 +21,6 @@ interface CaseBasicInfo {
   region: string;
   prefecture: string;
   city: string;
-  companySize: 'small' | 'medium' | 'large';
 }
 
 interface CaseCollectorProps {
@@ -43,7 +42,6 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
 企業名: ${basicInfo.companyName}
 業種: ${basicInfo.industry.join('、')}（メイン：${basicInfo.mainIndustry}）
 地域: ${basicInfo.region} ${basicInfo.prefecture} ${basicInfo.city}
-企業規模: ${basicInfo.companySize === 'small' ? '小規模（〜50名）' : basicInfo.companySize === 'medium' ? '中規模（50-300名）' : '大規模（300名〜）'}
 
 それでは、この企業様との商談について詳しく教えてください。どのような課題やニーズをお持ちでしたか？`;
     }
@@ -315,7 +313,6 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   region: basicInfo?.region || '',
                   prefecture: basicInfo?.prefecture || '',
                   city: basicInfo?.city || '',
-                  companySize: basicInfo?.companySize || 'medium',
                   // AI生成データがあれば使用、なければ空配列
                   challenges: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.challenge) : [],
                   challengeSummaries: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.title) : [],
@@ -349,7 +346,6 @@ export const CaseCollector: React.FC<CaseCollectorProps> = ({ onCaseCollected, o
                   region: basicInfo?.region || '',
                   prefecture: basicInfo?.prefecture || '',
                   city: basicInfo?.city || '',
-                  companySize: basicInfo?.companySize || 'medium',
                   // AI生成データがあれば使用、なければ空配列
                   challenges: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.challenge) : [],
                   challengeSummaries: aiDataReceived.length > 0 ? aiDataReceived.map(item => item.title) : [],

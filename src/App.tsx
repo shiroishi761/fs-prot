@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SearchFilters, Case } from './types/case';
 import { searchCases } from './utils/search';
 import { mockCases as initialMockCases } from './data/mockCases';
+// import { testMockCases as initialMockCases } from './data/testMockCases';
 import { useFavorites } from './hooks/useFavorites';
 import { useSearch } from './hooks/useSearch';
 import { useCaseNavigation } from './hooks/useCaseNavigation';

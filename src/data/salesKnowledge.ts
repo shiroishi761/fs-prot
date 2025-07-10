@@ -4,7 +4,6 @@ export interface SalesPattern {
   id: string;
   type: 'success' | 'failure';
   industry: string;
-  companySize: 'small' | 'medium' | 'large';
   stage: 'approach' | 'hearing' | 'proposal' | 'closing';
   situation: string;
   action: string;
@@ -20,7 +19,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'sp001',
     type: 'success',
     industry: '建設業',
-    companySize: 'small',
     stage: 'approach',
     situation: '従業員30名の地場ゼネコン。社長が現場にも出ている',
     action: '朝の現場巡回時間を避けて、午後に訪問。現場の苦労話から入った',
@@ -32,7 +30,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'sp002',
     type: 'success',
     industry: '建設業',
-    companySize: 'small',
     stage: 'proposal',
     situation: '予算が限られている小規模建設会社',
     action: '必要最小限の機能から始められるスモールスタートプランを提案',
@@ -46,7 +43,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'sp003',
     type: 'success',
     industry: '土木業',
-    companySize: 'medium',
     stage: 'hearing',
     situation: '公共工事が多く、書類作成に追われている',
     action: '実際の工事写真管理の大変さについて深堀りした',
@@ -58,7 +54,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'sp004',
     type: 'success',
     industry: '土木業',
-    companySize: 'medium',
     stage: 'closing',
     situation: '導入に慎重な管理職がいる',
     action: '同業他社の成功事例を詳しく説明し、お試し期間を設定',
@@ -72,7 +67,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'sp005',
     type: 'success',
     industry: '電気工事業',
-    companySize: 'large',
     stage: 'proposal',
     situation: '複数の現場を管理し、進捗把握が課題',
     action: 'ダッシュボード機能で全現場を一元管理できることをデモ',
@@ -87,7 +81,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'fp001',
     type: 'failure',
     industry: '建設業',
-    companySize: 'small',
     stage: 'approach',
     situation: '朝一番の忙しい時間に訪問',
     action: '現場に向かう準備中の社長に声をかけた',
@@ -99,7 +92,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'fp002',
     type: 'failure',
     industry: '建設業',
-    companySize: 'small',
     stage: 'proposal',
     situation: 'IT投資に消極的な社長',
     action: '最初から全機能の説明と料金を提示',
@@ -113,7 +105,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'fp003',
     type: 'failure',
     industry: '土木業',
-    companySize: 'medium',
     stage: 'hearing',
     situation: '現場の課題を聞かずに提案を始めた',
     action: '一般的な機能説明から入った',
@@ -125,7 +116,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'fp004',
     type: 'failure',
     industry: '土木業',
-    companySize: 'medium',
     stage: 'closing',
     situation: '決裁者不在で担当者とだけ話を進めた',
     action: '現場担当者の了解だけで進めようとした',
@@ -139,7 +129,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'sp006',
     type: 'success',
     industry: '管工事業',
-    companySize: 'small',
     stage: 'hearing',
     situation: '図面管理と現場との情報共有が課題',
     action: '実際の配管図面を見せてもらいながら課題を聞いた',
@@ -151,7 +140,6 @@ export const salesPatterns: SalesPattern[] = [
     id: 'fp005',
     type: 'failure',
     industry: '電気工事業',
-    companySize: 'large',
     stage: 'proposal',
     situation: 'セキュリティを重視する大手企業',
     action: 'クラウドの利便性ばかりを強調',
@@ -161,10 +149,9 @@ export const salesPatterns: SalesPattern[] = [
   }
 ];
 
-// 業界・規模別の重要ポイント
+// 業界別の重要ポイント
 export interface KeyInsight {
   industry: string;
-  companySize: 'small' | 'medium' | 'large';
   doList: string[];  // やるべきこと
   dontList: string[];  // 避けるべきこと
   effectiveApproach: string[];  // 効果的なアプローチ
@@ -173,7 +160,6 @@ export interface KeyInsight {
 export const keyInsights: KeyInsight[] = [
   {
     industry: '建設業',
-    companySize: 'small',
     doList: [
       '午後または夕方の訪問を心がける',
       '現場の苦労話に共感を示す',
@@ -194,7 +180,6 @@ export const keyInsights: KeyInsight[] = [
   },
   {
     industry: '土木業',
-    companySize: 'medium',
     doList: [
       '公共工事の書類作成の大変さに共感',
       '工事写真管理の効率化を訴求',
@@ -215,7 +200,6 @@ export const keyInsights: KeyInsight[] = [
   },
   {
     industry: '電気工事業',
-    companySize: 'large',
     doList: [
       'セキュリティ面の説明を重視',
       '全社導入のROIを明確に提示',

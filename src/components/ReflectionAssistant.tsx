@@ -58,7 +58,6 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
     // 既存の成功事例
     const relatedCases = cases.filter(c => {
       const sameIndustry = c.industry === reflection.industry;
-      const sameSize = c.companySize === reflection.companySize;
       const relatedContent = reflection.failurePoint && reflection.failurePoint.length > 0 && (
         // 新しいデータ構造と古いデータ構造の両方に対応
         (c.challenges?.some(challenge => challenge.includes(reflection.failurePoint!)) || 
@@ -67,23 +66,23 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
          c.proposal?.includes(reflection.failurePoint))
       );
       
-      return sameIndustry || sameSize || relatedContent;
+      return sameIndustry || relatedContent;
     }).slice(0, 2);
 
     return relatedCases;
   };
 
   // ノウハウベースのアドバイス生成
-  const generateKnowledgeBasedAdvice = (industry: string, companySize: string, failureStage: string): string[] => {
+  const generateKnowledgeBasedAdvice = (industry: string, failureStage: string): string[] => {
     const advice: string[] = [];
     
-    // 業界・規模別のインサイト
+    // 業界別のインサイト
     const insight = keyInsights.find(i => 
-      i.industry === industry && i.companySize === companySize
+      i.industry === industry
     );
     
     if (insight) {
-      advice.push(`【${industry}・${companySize === 'small' ? '小規模' : companySize === 'medium' ? '中規模' : '大規模'}企業への効果的なアプローチ】`);
+      advice.push(`【${industry}への効果的なアプローチ】`);
       insight.effectiveApproach.forEach(approach => {
         advice.push(`• ${approach}を重点的に訴求する`);
       });
@@ -92,8 +91,7 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
     // 類似失敗パターンからの学び
     const similarFailures = salesPatterns.filter(p => 
       p.type === 'failure' && 
-      p.industry === industry && 
-      (p.companySize === companySize || !companySize)
+      p.industry === industry
     );
 
     if (similarFailures.length > 0) {
@@ -106,8 +104,7 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
     // 成功パターンからの改善提案
     const successPatterns = salesPatterns.filter(p => 
       p.type === 'success' && 
-      p.industry === industry && 
-      (p.companySize === companySize || !companySize)
+      p.industry === industry
     );
 
     if (successPatterns.length > 0) {
@@ -168,7 +165,7 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
 優しく共感的な態度で接し、建設的なアドバイスを提供してください。
 
 以下の情報を段階的に収集してください：
-1. 業種、地域、企業規模
+1. 業種、地域、従業員人数
 2. どの段階で難しさを感じたか（例：アプローチ、ヒアリング、提案、クロージング）
 3. 顧客の具体的な反応
 4. 何が原因だと思うか
@@ -214,13 +211,12 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
         const conversationText = conversationHistory.map(h => h.parts).join(' ');
         const industry = collectedInfo.industry || 
           ['建設業', '土木業', '電気工事業', '管工事業'].find(i => conversationText.includes(i)) || '建設業';
-        const companySize = collectedInfo.companySize || 'medium';
         const failureStage = ['アプローチ', 'ヒアリング', '提案', 'クロージング'].find(s => 
           conversationText.includes(s)
         ) || '提案';
         
         // ノウハウベースのアドバイスを生成
-        const knowledgeAdvice = generateKnowledgeBasedAdvice(industry, companySize, failureStage);
+        const knowledgeAdvice = generateKnowledgeBasedAdvice(industry, failureStage);
         
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -284,7 +280,6 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
     const reflection: Omit<Reflection, 'id' | 'createdAt'> = {
       industry: collectedInfo.industry || '',
       region: collectedInfo.region || '',
-      companySize: collectedInfo.companySize || 'medium',
       situation: collectedInfo.situation || '',
       failurePoint: collectedInfo.failurePoint || '',
       customerReaction: collectedInfo.customerReaction || '',
@@ -356,7 +351,7 @@ export const ReflectionAssistant: React.FC<ReflectionAssistantProps> = ({
                   {message.relatedCases.map((c, index) => (
                     <div key={c.id} className="mb-2 p-2 bg-white rounded border border-green-200">
                       <p className="text-sm font-medium text-gray-800">{index + 1}. {c.title}</p>
-                      <p className="text-xs text-gray-600 mt-1">{c.industry} / {c.companySize === 'small' ? '小規模' : c.companySize === 'medium' ? '中規模' : '大規模'}</p>
+                      <p className="text-xs text-gray-600 mt-1">{c.industry}</p>
                       <p className="text-xs text-gray-700 mt-1">提案: {
                         (c.proposals?.length ? c.proposals[0] : c.proposal || '情報なし').substring(0, 50)
                       }...</p>
