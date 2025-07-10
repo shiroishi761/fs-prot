@@ -23,18 +23,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
   // State for active tab
   const [activeTab, setActiveTab] = useState<'basic' | 'neck'>('basic');
 
-  // Generate summary for header using challenge summary or fallback to challenge content
-  const generateSummary = (challenge?: string | null, challengeSummary?: string | null) => {
-    // Prefer challenge summary if available
-    if (challengeSummary) {
-      return challengeSummary;
-    }
-    // Fallback to truncated challenge content
-    if (challenge) {
-      return challenge.substring(0, 100) + (challenge.length > 100 ? '...' : '');
-    }
-    return '';
-  };
 
 
   // Format industries for display
@@ -91,15 +79,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({
     }
   };
 
-  // Get action result label and style
-  const getActionResultStyle = (result?: string) => {
-    switch (result) {
-      case '成功': return 'text-green-600 bg-green-50';
-      case '失敗': return 'text-red-600 bg-red-50';
-      case '保留': return 'text-yellow-600 bg-yellow-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleBackdropClick}>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Case, INDUSTRIES, REGIONS, AREA_HIERARCHY, NECK_TYPES, FIVE_CHALLENGES } from '../types/case';
+import { Case, NECK_TYPES, FIVE_CHALLENGES } from '../types/case';
 
 interface CaseBasicInfo {
   companyName: string;
