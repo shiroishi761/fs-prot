@@ -16,7 +16,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
       - run: npm ci
-      - run: npm run build
+      - name: Build React App
+        run: npm run build
         env:
           REACT_APP_GEMINI_API_KEY: ${{ secrets.REACT_APP_GEMINI_API_KEY }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
