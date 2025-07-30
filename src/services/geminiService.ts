@@ -2,11 +2,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Case } from '../types/case';
 
 // Gemini APIキーの取得（環境変数から取得、なければ直接指定）
-const API_KEY = process.env.REACT_APP_GEMINI_API_KEY || 'AIzaSyB4SaTlaJ5jBf9iGlotsXufRBfvqCUcB9U';
+const API_KEY = process.env.REACT_APP_GEMINI_API_KEY || 'AIzaSyBkHgx1X6T8qNn2SVbcviLVtgkUmeyr6jg';
 
 // デバッグ用ログ
 console.log('Gemini API Key loaded:', API_KEY ? `${API_KEY.substring(0, 10)}...` : 'NOT FOUND');
 console.log('Using hardcoded key:', !process.env.REACT_APP_GEMINI_API_KEY);
+console.log('Environment variable value:', process.env.REACT_APP_GEMINI_API_KEY ? `${process.env.REACT_APP_GEMINI_API_KEY.substring(0, 10)}...` : 'NOT SET');
 
 // Gemini クライアントの初期化
 const genAI = new GoogleGenerativeAI(API_KEY);
@@ -82,23 +83,73 @@ interface ConversationHistory {
 }
 
 export class GeminiService {
-  private model;
+  private model: any | null;
+  private isProductionMode: boolean;
 
   constructor() {
-    // APIキーの検証
-    if (!API_KEY) {
-      console.error('Gemini API key is not set. Please check your .env file.');
-      throw new Error('Gemini API key is missing');
-    }
-
-    // 利用可能なモデルを使用（最新のGemini 1.5 Flash）
-    this.model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
+    // 開発環境ではモック、本番環境では実際のAPI
+    this.isProductionMode = process.env.NODE_ENV === 'production';
+    
+    if (this.isProductionMode) {
+      // APIキーの検証
+      if (!API_KEY) {
+        console.error('Gemini API key is not set. Please check your .env file.');
+        throw new Error('Gemini API key is missing');
       }
-    });
+
+      // より安定したモデルを使用（Gemini Pro）
+      this.model = genAI.getGenerativeModel({ 
+        model: 'gemini-pro',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        }
+      });
+    } else {
+      console.log('開発モード: Gemini APIのモック実装を使用');
+      this.model = null; // 開発環境ではモックを使用
+    }
+  }
+
+  // リトライ機能付きAPI呼び出し
+  private async callWithRetry(chat: any, message: string, maxRetries = 3): Promise<any> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`API呼び出し試行 ${attempt}/${maxRetries}:`, message.substring(0, 50) + '...');
+        const result = await chat.sendMessage(message);
+        console.log(`試行 ${attempt} 成功`);
+        return result;
+      } catch (error: any) {
+        console.error(`試行 ${attempt} 失敗:`, error.message);
+        
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // 過負荷エラーの場合は少し待ってリトライ
+        if (error.message?.includes('overloaded') || error.message?.includes('503')) {
+          const waitTime = attempt * 2000; // 2秒、4秒、6秒と待機時間を増加
+          console.log(`${waitTime/1000}秒待機してリトライします...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          // その他のエラーの場合は短い待機
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+  }
+
+  // モック応答を生成（開発環境用）
+  private generateMockResponse(userMessage: string, conversationHistory: ConversationHistory[]): string {
+    const mockResponses = [
+      'ありがとうございます。詳しく教えてください。どのような具体的な課題がありましたか？',
+      'なるほど、とても興味深いですね。その課題に対してどのようなアプローチを考えられましたか？',
+      'そのソリューションは素晴らしいですね。お客様の反応はいかがでしたか？',
+      '事例情報が整理されました！保存ボタンから事例を保存できます。[CONFIRM_SAVE]'
+    ];
+    
+    const responseIndex = Math.min(conversationHistory.length % mockResponses.length, mockResponses.length - 1);
+    return mockResponses[responseIndex];
   }
 
   // 会話を続ける
@@ -109,7 +160,26 @@ export class GeminiService {
     response: string;
     structuredCase?: Omit<Case, 'id' | 'createdAt' | 'updatedAt'>;
   }> {
+    // 開発環境ではモック応答を返す
+    if (!this.isProductionMode) {
+      console.log('モック応答を生成中...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒の遅延をシミュレート
+      
+      const mockResponse = this.generateMockResponse(userMessage, conversationHistory);
+      const updatedHistory = [...conversationHistory, { role: 'user' as const, parts: userMessage }];
+      
+      return {
+        response: mockResponse,
+        structuredCase: mockResponse.includes('[CONFIRM_SAVE]') ? this.extractStructuredCase(mockResponse, updatedHistory) : undefined
+      };
+    }
+
     try {
+      // 本番環境でのnullチェック
+      if (!this.model) {
+        throw new Error('Gemini API model is not initialized');
+      }
+
       // 会話履歴にユーザーのメッセージを追加
       const updatedHistory: ConversationHistory[] = [
         ...conversationHistory,
@@ -126,9 +196,8 @@ export class GeminiService {
         }
       });
 
-      // 最新のユーザーメッセージのみを送信
-      console.log('Sending message to Gemini:', userMessage.substring(0, 100) + '...');
-      const result = await chat.sendMessage(userMessage);
+      // リトライ機能付きでメッセージを送信
+      const result = await this.callWithRetry(chat, userMessage);
       const response = result.response;
       const text = response.text();
       console.log('Received response from Gemini:', text.substring(0, 100) + '...');
@@ -142,17 +211,33 @@ export class GeminiService {
       };
     } catch (error: any) {
       console.error('Gemini API Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        stack: error.stack
+      });
       
       // より詳細なエラーメッセージ
-      if (error.message?.includes('API_KEY_INVALID')) {
+      if (error.message?.includes('API_KEY_INVALID') || error.status === 400) {
         throw new Error('APIキーが無効です。Gemini APIキーを確認してください。');
-      } else if (error.message?.includes('PERMISSION_DENIED')) {
+      } else if (error.message?.includes('PERMISSION_DENIED') || error.status === 403) {
         throw new Error('APIキーの権限が不足しています。Gemini APIの設定を確認してください。');
-      } else if (error.message?.includes('quota')) {
+      } else if (error.message?.includes('quota') || error.status === 429) {
         throw new Error('APIの利用制限に達しました。しばらく待ってから再試行してください。');
+      } else if (error.message?.includes('overloaded') || error.message?.includes('503')) {
+        throw new Error('AIサービスが一時的に過負荷状態です。少し時間をおいて再試行してください。');
+      } else if (error.message?.includes('CORS')) {
+        throw new Error('CORS エラーが発生しました。開発サーバーを再起動してください。');
+      } else if (error.message?.includes('fetch')) {
+        throw new Error('ネットワークエラーが発生しました。インターネット接続を確認してください。');
       }
       
       throw new Error(`AIとの通信中にエラーが発生しました: ${error.message || 'Unknown error'}`);
+      
+    } finally {
+      // リソースのクリーンアップ（必要に応じて）
+      console.log('API呼び出し完了');
     }
   }
 
